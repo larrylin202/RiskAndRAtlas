@@ -1,7 +1,15 @@
-# Python bytecode & cache
-__pycache__/
-*.py[cod]
-*$py.class
+# Python / Backend
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+backend/.env
+backend/.pytest_cache/
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
 
 # Virtual environments
 venv/
@@ -13,11 +21,7 @@ env/
 .env.local
 
 # Output files & local data caches
-*.html
-*.geojson
-*.json
-data_sample.json
-api_keys.json
+old/
 
 # IDE & OS files
 .DS_Store
