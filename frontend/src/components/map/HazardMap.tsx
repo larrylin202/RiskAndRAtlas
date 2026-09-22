@@ -35,11 +35,13 @@ export const HazardMap: React.FC = () => {
   const handleLocationFound = useCallback((coords: LatLngTuple) => {
     setUserLocation(coords);
   }, []);
-  const [geoData, setGeoData] = useState<HazardFeatureCollection | null>(null);
+  const [earthquakeData, setEarthquakeData] = useState<HazardFeatureCollection | null>(null);
+  const [wildfireData, setWildfireData] = useState<HazardFeatureCollection | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Fetch earthquake data
     fetch('/api/hazards/earthquakes')
       .then((res) => {
         if (!res.ok) {
@@ -48,7 +50,25 @@ export const HazardMap: React.FC = () => {
         return res.json() as Promise<HazardFeatureCollection>;
       })
       .then((data) => {
-        setGeoData(data);
+        setEarthquakeData(data);
+        setIsLoading(false);
+      })
+      .catch((err: Error) => {
+        console.error('Failed to load hazard GeoJSON:', err);
+        setError(err.message);
+        setIsLoading(false);
+      });
+    
+    // Fetch wildfire data
+    fetch('/api/hazards/wildfires')
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('HTTP error: ${res.status}');
+        }
+        return res.json() as Promise<HazardFeatureCollection>;
+      })
+      .then((data) => {
+        setWildfireData(data);
         setIsLoading(false);
       })
       .catch((err: Error) => {
@@ -68,6 +88,7 @@ export const HazardMap: React.FC = () => {
           <h4 style="margin: 0 0 4px 0;">${feature.properties.title}</h4>
           ${feature.properties.place ? `<p style="margin: 0;">Location: ${feature.properties.place}</p>` : ''}
           ${feature.properties.mag ? `<p style="margin: 0;">Magnitude: <strong>${feature.properties.mag}</strong></p>` : ''}
+          ${feature.properties.size ? `<p style="margin: 0;">Size: ${feature.properties.size}</p>` : ''}
         </div>
       `);
     }
@@ -84,6 +105,15 @@ export const HazardMap: React.FC = () => {
       weight: 1,
       fillOpacity: fillOpacity || 0.4,
     });
+  };
+
+  const setWildfireStyle = () => {
+    return {
+      fillColor: 'red',
+      color: 'red', // Outline color
+      weight: 1,
+      fillOpacity: 0.4,
+    };
   };
 
   return (
@@ -140,12 +170,21 @@ export const HazardMap: React.FC = () => {
           </Marker>
         )}
 
-        {geoData && (
+        {earthquakeData && (
           <GeoJSON
-            key={JSON.stringify(geoData)}
-            data={geoData}
+            key={JSON.stringify(earthquakeData)}
+            data={earthquakeData}
             onEachFeature={onEachHazardFeature}
             pointToLayer={createCircleMarker}
+          />
+        )}
+
+        {wildfireData && (
+          <GeoJSON
+            key={JSON.stringify(wildfireData)}
+            data={wildfireData}
+            onEachFeature={onEachHazardFeature}
+            style={setWildfireStyle}
           />
         )}
       </MapContainer>

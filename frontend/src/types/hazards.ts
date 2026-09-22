@@ -5,6 +5,7 @@ export interface HazardProperties {
   id?: string;
   title?: string;
   mag?: number;
+  size?: number;
   place?: string;
   time?: number;
   severity?: 'Low' | 'Medium' | 'High' | 'Extreme';

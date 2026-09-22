@@ -18,6 +18,9 @@ def get_earthquakes():
         for feature in geojson_data.get("features", []):
             properties = feature.get("properties", {})
             mag = properties.get("mag")
+
+            # Inject the hazard type into the GeoJSON properties
+            feature["properties"]["hazardType"] = 'earthquake' 
             
             radius = 500 # Default fallback radius
             fill_color = "gray"
@@ -45,3 +48,30 @@ def get_earthquakes():
         
     except requests.RequestException as e:
         return jsonify({"error": "Failed to fetch USGS data", "details": str(e)}), 500
+
+@hazards_bp.route("/wildfires", methods=["GET"])
+def get_wildfires():
+    url = "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+
+        geojson_data = response.json()
+
+        for feature in geojson_data.get("features", []):
+            # Inject the hazard type into the GeoJSON properties
+            feature["properties"]["hazardType"] = 'wildfire'
+
+            # Fixes property name differences between APIs
+            feature["properties"]["title"] = feature["properties"]["attr_IncidentName"]
+            feature["properties"]["place"] = feature["properties"]["attr_IncidentShortDescription"]
+
+            size = feature["properties"]["attr_CalculatedAcres"]
+            if size != None:
+                feature["properties"]["size"] = round(size)
+
+        return jsonify(geojson_data)
+
+    except requests.RequestException as e:
+        return jsonify({"error": "Failed to fetch NIFC data", "details": str(e)}), 500
