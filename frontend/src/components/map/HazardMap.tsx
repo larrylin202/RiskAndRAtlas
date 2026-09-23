@@ -83,14 +83,42 @@ export const HazardMap: React.FC = () => {
     layer: Layer
   ) => {
     if (feature.properties && feature.properties.title) {
-      layer.bindPopup(`
-        <div style="font-family: sans-serif; font-size: 13px;">
-          <h4 style="margin: 0 0 4px 0;">${feature.properties.title}</h4>
-          ${feature.properties.place ? `<p style="margin: 0;">Location: ${feature.properties.place}</p>` : ''}
-          ${feature.properties.mag ? `<p style="margin: 0;">Magnitude: <strong>${feature.properties.mag}</strong></p>` : ''}
-          ${feature.properties.size ? `<p style="margin: 0;">Size: ${feature.properties.size}</p>` : ''}
-        </div>
-      `);
+      const titleText = feature.properties.title
+
+      const buildPopup = () => {
+        const div = document.createElement('div');
+        div.className = "EarthquakePopup";
+
+        const title = document.createElement('h4');
+
+        title.textContent = titleText
+
+        div.append(title)
+
+        if (feature.properties.place) {
+          const locationText = document.createElement('p')
+
+          locationText.textContent = `Location: ${feature.properties.place}`
+
+          div.append(locationText)
+        }
+      
+        if (feature.properties.mag != null) {
+          const magnitudeText = document.createElement('p')
+
+          const magnitudeNumber = document.createElement('strong')
+          magnitudeNumber.textContent = String(feature.properties.mag)
+
+          magnitudeText.textContent = `Magnitude: `
+          magnitudeText.append(magnitudeNumber)
+
+          div.append(magnitudeText)
+        }
+
+        return div
+      }
+
+      layer.bindPopup(buildPopup);
     }
   };
 
@@ -117,7 +145,7 @@ export const HazardMap: React.FC = () => {
   };
 
   return (
-    <div style={{ height: '100vh', width: '100%', position: 'relative' }}>
+    <div style={{ height: '100%', width: '100%', position: 'relative' }}>
       {isLoading && (
         <div style={{
           position: 'absolute',
@@ -172,7 +200,6 @@ export const HazardMap: React.FC = () => {
 
         {earthquakeData && (
           <GeoJSON
-            key={JSON.stringify(earthquakeData)}
             data={earthquakeData}
             onEachFeature={onEachHazardFeature}
             pointToLayer={createCircleMarker}

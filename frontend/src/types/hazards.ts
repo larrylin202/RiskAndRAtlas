@@ -1,5 +1,5 @@
 // frontend/src/types/hazards.ts
-import type { FeatureCollection, Point, Geometry } from 'geojson';
+import type { FeatureCollection, Geometry } from 'geojson';
 
 export interface HazardProperties {
   id?: string;
