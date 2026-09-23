@@ -30,3 +30,5 @@ old/
 .DS_Store
 .vscode/
 .idea/
+
+.zip
