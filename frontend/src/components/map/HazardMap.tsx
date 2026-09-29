@@ -35,8 +35,11 @@ export const HazardMap: React.FC = () => {
   const handleLocationFound = useCallback((coords: LatLngTuple) => {
     setUserLocation(coords);
   }, []);
+
   const [earthquakeData, setEarthquakeData] = useState<HazardFeatureCollection | null>(null);
   const [wildfireData, setWildfireData] = useState<HazardFeatureCollection | null>(null);
+  const [floodData, setFloodData] = useState<HazardFeatureCollection | null>(null);
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +78,22 @@ export const HazardMap: React.FC = () => {
         console.error('Failed to load hazard GeoJSON:', err);
         setError(err.message);
         setIsLoading(false);
+      });
+    
+    // Fetch 
+    fetch('/api/hazards/floods')
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('HTTP error: ${res.status}');
+        }
+        return res.json() as Promise<HazardFeatureCollection>;
+      })
+      .then((data) => {
+        setFloodData(data);
+        setIsLoading(false);
+      })
+      .catch((err: Error) => {
+        console.error('Failed to load hazard GeoJSON:', err);
       });
   }, []);
 
@@ -212,6 +231,14 @@ export const HazardMap: React.FC = () => {
             data={wildfireData}
             onEachFeature={onEachHazardFeature}
             style={setWildfireStyle}
+          />
+        )}
+
+        {floodData && (
+          <GeoJSON
+            key={JSON.stringify(wildfireData)}
+            data={floodData}
+            onEachFeature={onEachHazardFeature}
           />
         )}
       </MapContainer>

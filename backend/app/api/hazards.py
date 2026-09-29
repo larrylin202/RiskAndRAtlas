@@ -75,3 +75,26 @@ def get_wildfires():
 
     except requests.RequestException as e:
         return jsonify({"error": "Failed to fetch NIFC data", "details": str(e)}), 500
+
+@hazards_bp.route("/floods", methods=["GET"])
+def get_floods():
+    url = "https://api.waterdata.usgs.gov/rtfi-api/referencepoints/flooding/geojson"
+
+    try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+    
+            geojson_data = response.json()
+
+            for feature in geojson_data.get("features", []):
+                        # Inject the hazard type into the GeoJSON properties
+                        feature["properties"]["hazardType"] = 'flood'
+            
+                        # Fixes property name differences between APIs
+                        feature["properties"]["title"] = feature["properties"]["rp_name"] + " - " + feature["properties"]["site_name"]
+                        feature["properties"]["place"] = feature["properties"]["site_name"]
+    
+            return jsonify(geojson_data)
+    
+    except requests.RequestException as e:
+        return jsonify({"error": "Failed to fetch USGS data", "details": str(e)}), 500
