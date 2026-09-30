@@ -12,5 +12,9 @@ def create_app():
     # Register the hazards blueprint we just created
     from .api.hazards import hazards_bp
     app.register_blueprint(hazards_bp, url_prefix="/api/hazards")
-
+    
+    # Register the risk scoring blueprint
+    from .api.scoring import scoring_bp
+    app.register_blueprint(scoring_bp, url_prefix="/api/risk")
+    
     return app
