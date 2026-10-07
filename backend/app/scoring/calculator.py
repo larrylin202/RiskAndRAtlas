@@ -101,16 +101,40 @@ def wildfire_score(
     return round(score, 2)
 
 def combined_risk_score(
-    earthquake: float,
-    wildfire: float,
+    earthquake: float | None = None,
+    wildfire: float | None = None,
+    flood: float | None = None,
+    air_quality: float | None = None,
+    hospital_readiness: float | None = None,
+    shelter_readiness: float | None = None,
+    fire_station_readiness: float | None = None,
 ) -> float:
     """
-    Calculate the preliminary combined environmental risk score.
+    Calculate a preliminary combined risk score from the
+    available risk and resilience components.
 
-    Currently averages the available earthquake and wildfire
-    contributions equally. Additional hazards can be added later.
+    Components that are not yet available are excluded from
+    the calculation.
     """
 
-    score = (earthquake + wildfire) / 2
+    components = [
+        earthquake,
+        wildfire,
+        flood,
+        air_quality,
+        hospital_readiness,
+        shelter_readiness,
+        fire_station_readiness,
+    ]
+
+    available_components = [
+        component for component in components
+        if component is not None
+    ]
+
+    if not available_components:
+        return 0.0
+
+    score = sum(available_components) / len(available_components)
 
     return round(score, 2)

@@ -2,7 +2,7 @@ import requests
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 
-from ..scoring.calculator import earthquake_score
+from ..scoring.calculator import earthquake_score, combined_risk_score
 from ..utils.geo import haversine_distance_km
 
 scoring_bp = Blueprint("scoring", __name__)
@@ -97,11 +97,18 @@ def get_risk_score():
             strongest_earthquake = None
             earthquake_risk = 0.0
 
+        # Calculate the preliminary combined risk score.
+        # Currently, earthquake is the only available component.
+        combined_risk = combined_risk_score(
+            earthquake=earthquake_risk
+        )
+
         return jsonify({
             "latitude": latitude,
             "longitude": longitude,
             "earthquake_count": len(earthquake_features),
             "earthquake_risk": earthquake_risk,
+            "combined_risk": combined_risk,
             "strongest_earthquake": strongest_earthquake,
         })
 
