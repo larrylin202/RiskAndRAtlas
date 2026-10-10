@@ -3,15 +3,25 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _sqlalchemy_url(url):
+    """Hosts (Supabase) hand out postgres:// or postgresql:// URLs, which
+    SQLAlchemy maps to psycopg2; we use psycopg 3."""
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-key")
     #DATABASE_URI = os.getenv("DATABASE_URI", "mongodb://localhost:27017/rr_atlas")
     AIRNOW_API_KEY = os.getenv("AIRNOW_API_KEY")
     NOAA_USER_AGENT = os.getenv("NOAA_USER_AGENT", "(RRAtlas, dev@example.com)")
     REDIS_URL = os.getenv("REDIS_URL")
-    SQLALCHEMY_DATABASE_URI = os.getenv(
+    SQLALCHEMY_DATABASE_URI = _sqlalchemy_url(os.getenv(
         "DATABASE_URI", "postgresql+psycopg://rr:rr@localhost:5432/rr_atlas"
-    )
+    ))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,  # hosted DBs drop idle connections
