@@ -1,11 +1,17 @@
-import requests
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify
+from sqlalchemy import func, select
 
+from ..extensions import db
+from ..models import HazardFeature
 from ..scoring.calculator import earthquake_score, combined_risk_score
-from ..utils.geo import haversine_distance_km
 
 scoring_bp = Blueprint("scoring", __name__)
+
+# Only earthquakes within this radius and age contribute to the
+# preliminary location-based earthquake risk score.
+EARTHQUAKE_RADIUS_KM = 50.0
+EARTHQUAKE_MAX_AGE_DAYS = 30
 
 
 @scoring_bp.route("/score", methods=["GET"])
@@ -18,102 +24,75 @@ def get_risk_score():
             "error": "Both lat and lon are required"
         }), 400
 
-    earthquake_url = (
-        "https://earthquake.usgs.gov/earthquakes/feed/v1.0/"
-        "summary/all_day.geojson"
-    )
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        return jsonify({
+            "error": "lat must be between -90 and 90 and lon between -180 and 180"
+        }), 400
 
-    try:
-        response = requests.get(earthquake_url, timeout=10)
-        response.raise_for_status()
+    now = datetime.now(timezone.utc)
 
-        earthquake_data = response.json()
+    # geography(...) makes distances meters on the spheroid; the expression
+    # matches idx_hazard_features_geog so ST_DWithin can use the index.
+    point = func.geography(func.ST_SetSRID(func.ST_MakePoint(longitude, latitude), 4326))
+    geom = func.geography(HazardFeature.geom)
 
-        earthquake_features = earthquake_data.get("features", [])
+    nearby_earthquakes = db.session.execute(
+        select(
+            HazardFeature.properties["mag"].as_float(),
+            HazardFeature.observed_at,
+            func.ST_Distance(geom, point),
+        ).where(
+            HazardFeature.hazard_type == "earthquake",
+            HazardFeature.observed_at >= now - timedelta(days=EARTHQUAKE_MAX_AGE_DAYS),
+            func.ST_DWithin(geom, point, EARTHQUAKE_RADIUS_KM * 1000),
+        )
+    ).all()
 
-        earthquake_distances = []
+    earthquake_distances = []
 
-        for feature in earthquake_features:
-            geometry = feature.get("geometry", {})
-            coordinates = geometry.get("coordinates", [])
+    for magnitude, event_time, distance_m in nearby_earthquakes:
+        if magnitude is None:
+            continue
 
-            if len(coordinates) < 2:
-                continue
+        distance_km = distance_m / 1000
+        age_days = (now - event_time).total_seconds() / 86400
 
-            earthquake_longitude = coordinates[0]
-            earthquake_latitude = coordinates[1]
-
-            distance_km = haversine_distance_km(
-                latitude,
-                longitude,
-                earthquake_latitude,
-                earthquake_longitude,
-            )
-
-            properties = feature.get("properties", {})
-
-            magnitude = properties.get("mag")
-            timestamp = properties.get("time")
-
-            if magnitude is None or timestamp is None:
-                continue
-
-            event_time = datetime.fromtimestamp(
-                timestamp / 1000,
-                tz=timezone.utc,
-            )
-
-            age_days = (
-                datetime.now(timezone.utc) - event_time
-            ).total_seconds() / 86400
-
-            # Only earthquakes within 50 km contribute to the
-            # preliminary location-based earthquake risk score.
-            if distance_km > 50.0:
-                continue
-
-            score = earthquake_score(
-                magnitude,
-                distance_km,
-                age_days,
-            )
-
-            earthquake_distances.append({
-                "distance_km": round(distance_km, 2),
-                "magnitude": magnitude,
-                "age_days": round(age_days, 2),
-                "score": score,
-            })
-
-        # Use the highest-scoring earthquake as the preliminary
-        # earthquake risk contribution for this location.
-        if earthquake_distances:
-            strongest_earthquake = max(
-                earthquake_distances,
-                key=lambda earthquake: earthquake["score"]
-            )
-            earthquake_risk = strongest_earthquake["score"]
-        else:
-            strongest_earthquake = None
-            earthquake_risk = 0.0
-
-        # Calculate the preliminary combined risk score.
-        # Currently, earthquake is the only available component.
-        combined_risk = combined_risk_score(
-            earthquake=earthquake_risk
+        score = earthquake_score(
+            magnitude,
+            distance_km,
+            age_days,
         )
 
-        return jsonify({
-            "latitude": latitude,
-            "longitude": longitude,
-            "earthquake_count": len(earthquake_features),
-            "earthquake_risk": earthquake_risk,
-            "combined_risk": combined_risk,
-            "strongest_earthquake": strongest_earthquake,
+        earthquake_distances.append({
+            "distance_km": round(distance_km, 2),
+            "magnitude": magnitude,
+            "age_days": round(age_days, 2),
+            "score": score,
         })
 
-    except requests.RequestException as e:
-        return jsonify({
-            "error": "Failed to fetch earthquake data",
-            "details": str(e)
-        }), 500
+    # Use the highest-scoring earthquake as the preliminary
+    # earthquake risk contribution for this location.
+    if earthquake_distances:
+        strongest_earthquake = max(
+            earthquake_distances,
+            key=lambda earthquake: earthquake["score"]
+        )
+        earthquake_risk = strongest_earthquake["score"]
+    else:
+        strongest_earthquake = None
+        earthquake_risk = 0.0
+
+    # Calculate the preliminary combined risk score.
+    # Currently, earthquake is the only available component.
+    combined_risk = combined_risk_score(
+        earthquake=earthquake_risk
+    )
+
+    return jsonify({
+        "latitude": latitude,
+        "longitude": longitude,
+        "earthquake_count": len(earthquake_distances),
+        "earthquake_risk": earthquake_risk,
+        "combined_risk": combined_risk,
+        "strongest_earthquake": strongest_earthquake,
+    })

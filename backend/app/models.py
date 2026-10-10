@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from geoalchemy2 import Geometry
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import JSONB
 from .extensions import db
 
@@ -19,6 +20,9 @@ class HazardFeature(db.Model):
     # when a feed was last checked lives in IngestRun.last_success_at
     fetched_at = db.Column(db.DateTime(timezone=True), nullable=False,
                 default=lambda: datetime.now(timezone.utc), index=True)
+
+# proximity queries use geography(geom) for distances in meters, which the geom index can't serve
+db.Index("idx_hazard_features_geog", func.geography(HazardFeature.geom), postgresql_using="gist")
 
 
 class IngestRun(db.Model):

@@ -19,6 +19,13 @@ def create_app():
             from .services.refresh import maybe_refresh_async
             maybe_refresh_async()
 
+    @app.errorhandler(SQLAlchemyError)
+    def database_error(e):
+        # hazard routes read from the DB; don't leak connection details to the client
+        db.session.rollback()
+        app.logger.exception("database error")
+        return {"error": "Database unavailable"}, 503
+
     @app.route("/api/health")
     def health():
         # queries the DB so an external keep-alive ping also keeps a hosted DB from pausing
