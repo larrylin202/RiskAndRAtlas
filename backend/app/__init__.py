@@ -24,5 +24,17 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     from . import models # so Alembic sees the tables
-    
+
+    @app.cli.command("ingest")
+    def ingest():
+        """Fetch every bulk hazard feed and upsert it into hazard_features."""
+        from .services import usgs, nifc, rtfi
+        for name, service in (("earthquakes", usgs), ("wildfires", nifc), ("floods", rtfi)):
+            # one failing feed shouldn't stop the others
+            try:
+                print(f"{name}: {service.refresh()} rows")
+            except Exception as e:
+                db.session.rollback()
+                print(f"{name}: FAILED - {e}")
+
     return app
