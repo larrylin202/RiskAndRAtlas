@@ -1,12 +1,15 @@
 import json
 from datetime import datetime, timezone
-from sqlalchemy import func, delete
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import String, all_, bindparam, delete, func, tuple_
+from sqlalchemy.dialects.postgresql import ARRAY, insert
 from ..extensions import db
 from ..models import HazardFeature
 
 # Postgres caps a statement at 65,535 bind parameters; ~7 per row
 BATCH_SIZE = 1000
+
+# columns compared to decide whether a row actually changed
+CONTENT_COLUMNS = ("hazard_type", "title", "properties", "geom", "observed_at")
 
 
 def from_epoch_ms(value):
@@ -21,7 +24,7 @@ def upsert_features(source, hazard_type, records):
 
     Each record is a dict with keys: source_id, title, properties, geometry
     (a GeoJSON geometry dict) and observed_at (datetime or None).
-    Returns the number of rows written.
+    Returns (seen, changed): features in the feed, and rows actually inserted or updated.
     """
     now = datetime.now(timezone.utc)
 
@@ -45,18 +48,25 @@ def upsert_features(source, hazard_type, records):
         "fetched_at": now,
     } for source_id, r in unique.items()]
 
+    changed = 0
     for start in range(0, len(rows), BATCH_SIZE):
         stmt = insert(HazardFeature).values(rows[start:start + BATCH_SIZE])
         stmt = stmt.on_conflict_do_update(
             index_elements=["source", "source_id"],
-            set_={c: stmt.excluded[c] for c in
-                  ("hazard_type", "title", "properties", "geom", "observed_at", "fetched_at")},
+            set_={c: stmt.excluded[c] for c in CONTENT_COLUMNS + ("fetched_at",)},
+            # every UPDATE leaves a dead row version behind, so leave identical rows alone
+            where=tuple_(*(HazardFeature.__table__.c[c] for c in CONTENT_COLUMNS))
+                .is_distinct_from(tuple_(*(stmt.excluded[c] for c in CONTENT_COLUMNS))),
         )
-        db.session.execute(stmt)
+        # SQLAlchemy only reports rowcount for INSERT when asked to
+        changed += db.session.execute(stmt.execution_options(preserve_rowcount=True)).rowcount
 
-    # replaces Mongo's TTL index: anything not refreshed in this run is gone from the feed.
+    # replaces Mongo's TTL index: anything this source no longer returns is gone.
     # Only reached after a successful fetch, so an upstream outage never empties the table.
+    # (fetched_at can't be used for this: unchanged rows keep their old fetched_at)
     db.session.execute(delete(HazardFeature).where(
-        HazardFeature.source == source, HazardFeature.fetched_at < now))
+        HazardFeature.source == source,
+        HazardFeature.source_id != all_(bindparam("seen_ids", list(unique), type_=ARRAY(String))),
+    ))
     db.session.commit()
-    return len(rows)
+    return len(rows), changed

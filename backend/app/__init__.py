@@ -1,4 +1,7 @@
-from flask import Flask
+import sys
+import click
+from flask import Flask, request
+from sqlalchemy.exc import SQLAlchemyError
 from flask_cors import CORS
 from .config import Config
 from .extensions import db, migrate
@@ -9,9 +12,23 @@ def create_app():
 
     CORS(app)
 
+    @app.before_request
+    def refresh_stale_feeds():
+        # background refresh of stale hazard feeds; never blocks the request
+        if request.path.startswith("/api/"):
+            from .services.refresh import maybe_refresh_async
+            maybe_refresh_async()
+
     @app.route("/api/health")
     def health():
-        return {"status": "healthy", "service": "R&R Atlas Backend"}
+        # queries the DB so an external keep-alive ping also keeps a hosted DB from pausing
+        from .services.refresh import feed_status
+        try:
+            feeds = feed_status()
+        except SQLAlchemyError:
+            db.session.rollback()
+            return {"status": "unhealthy", "service": "R&R Atlas Backend", "database": "unreachable"}, 503
+        return {"status": "healthy", "service": "R&R Atlas Backend", "database": "ok", "feeds": feeds}
 
     # Register the hazards blueprint we just created
     from .api.hazards import hazards_bp
@@ -26,15 +43,23 @@ def create_app():
     from . import models # so Alembic sees the tables
 
     @app.cli.command("ingest")
-    def ingest():
-        """Fetch every bulk hazard feed and upsert it into hazard_features."""
-        from .services import usgs, nifc, rtfi
-        for name, service in (("earthquakes", usgs), ("wildfires", nifc), ("floods", rtfi)):
+    @click.argument("sources", nargs=-1)
+    def ingest(sources):
+        """Refresh hazard feeds now, ignoring staleness. SOURCES: usgs nifc rtfi (default: all)."""
+        from .services.refresh import SERVICES, run_source
+        unknown = set(sources) - set(SERVICES)
+        if unknown:
+            raise click.BadParameter(f"unknown source(s) {', '.join(sorted(unknown))}; choose from {', '.join(SERVICES)}")
+        failed = False
+        for source in sources or SERVICES:
             # one failing feed shouldn't stop the others
             try:
-                print(f"{name}: {service.refresh()} rows")
+                seen, changed = run_source(source)
+                print(f"{source}: {seen} features, {changed} inserted/updated")
             except Exception as e:
-                db.session.rollback()
-                print(f"{name}: FAILED - {e}")
+                failed = True
+                print(f"{source}: FAILED - {e}")
+        if failed:
+            sys.exit(1)  # non-zero so a cron job reports the failure
 
     return app

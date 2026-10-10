@@ -13,3 +13,10 @@ class Config:
         "DATABASE_URI", "postgresql+psycopg://rr:rr@localhost:5432/rr_atlas"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,  # hosted DBs drop idle connections
+        "connect_args": {"connect_timeout": 5},
+    }
+    # refresh hazard feeds in the background when they're older than this (services/refresh.py)
+    AUTO_INGEST = os.getenv("AUTO_INGEST", "true").lower() == "true"
+    INGEST_STALE_MINUTES = int(os.getenv("INGEST_STALE_MINUTES", "10"))
