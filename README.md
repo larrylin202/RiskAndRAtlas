@@ -21,7 +21,7 @@ the database and never calls USGS / NIFC per request. A background thread re-fet
 feed when its data is older than 10 minutes. Pick one of the two options below.
 
 ## Option A: shared Supabase database (just running/testing the app)
-1. Ask a teammate for the Supabase `DATABASE_URI` (sent privately, never committed).
+1. Ask Richie for the Supabase `DATABASE_URI` (sent privately, never committed).
 2. Put it in `backend/.env`:
    ```
    DATABASE_URI=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
