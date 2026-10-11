@@ -1,4 +1,4 @@
-// frontend/src/components/map/HazardMap.tsx
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from 'react-leaflet';
 import type { Layer } from 'leaflet';
@@ -26,7 +26,11 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-export const HazardMap: React.FC = () => {
+interface HazardMapProps {
+  onUserLocationChange?: (coords: LatLngTuple) => void;
+}
+
+export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange }) => {
   // Default fallback center (California)
   const defaultCenter: LatLngTuple = [36.7783, -119.4179];
   const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
@@ -34,7 +38,8 @@ export const HazardMap: React.FC = () => {
   // Prevents the function from being recreated on every render
   const handleLocationFound = useCallback((coords: LatLngTuple) => {
     setUserLocation(coords);
-  }, []);
+    onUserLocationChange?.(coords);
+  }, [onUserLocationChange]);
 
   const [earthquakeData, setEarthquakeData] = useState<HazardFeatureCollection | null>(null);
   const [wildfireData, setWildfireData] = useState<HazardFeatureCollection | null>(null);
