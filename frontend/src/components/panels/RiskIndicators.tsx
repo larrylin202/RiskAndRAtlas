@@ -4,6 +4,7 @@ import type { LatLngTuple } from '../../types/hazards';
 
 interface RiskIndicatorsProps {
   userLocation: LatLngTuple | null;
+  locationError?: string | null;
 }
 
 interface RiskScoreResponse {
@@ -20,7 +21,7 @@ interface RiskScoreResponse {
   } | null;
 }
 
-const RiskIndicators: React.FC<RiskIndicatorsProps> = ({ userLocation }) => {
+const RiskIndicators: React.FC<RiskIndicatorsProps> = ({ userLocation, locationError }) => {
   const [riskData, setRiskData] = useState<RiskScoreResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +133,11 @@ const RiskIndicators: React.FC<RiskIndicatorsProps> = ({ userLocation }) => {
       </h2>
 
       {!userLocation && (
-        <p style={descriptionStyle}>Waiting for your location...</p>
+        <p style={descriptionStyle}>
+          {locationError
+            ? `${locationError} Click anywhere on the map to choose a location.`
+            : 'Waiting for your location... or click the map to choose one.'}
+        </p>
       )}
 
       {userLocation && isLoading && (

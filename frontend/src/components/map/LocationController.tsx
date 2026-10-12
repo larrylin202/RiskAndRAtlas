@@ -4,17 +4,27 @@ import type { LatLngTuple } from '../../types/hazards';
 
 interface LocationControllerProps {
   onLocationFound?: (coords: LatLngTuple) => void;
+  onLocationError?: (message: string) => void;
+  // Set to false once the user picks a spot manually so a late GPS fix doesn't override it
+  enabled?: boolean;
 }
 
-export const LocationController: React.FC<LocationControllerProps> = ({ onLocationFound }) => {
+export const LocationController: React.FC<LocationControllerProps> = ({
+  onLocationFound,
+  onLocationError,
+  enabled = true,
+}) => {
   const map = useMap();
 
   useEffect(() => {
     // Flag to track if THIS specific render cycle was unmounted
     let isCancelled = false;
 
+    if (!enabled) return;
+
     if (!navigator.geolocation) {
       console.warn('Geolocation is not supported by your browser.');
+      onLocationError?.('Location is not supported by your browser.');
       return;
     }
 
@@ -35,7 +45,14 @@ export const LocationController: React.FC<LocationControllerProps> = ({ onLocati
         }
       },
       (error: GeolocationPositionError) => {
+        if (isCancelled) return;
+
         console.warn(`Geolocation error (${error.code}): ${error.message}`);
+        onLocationError?.(
+          error.code === error.PERMISSION_DENIED
+            ? 'Location access was denied.'
+            : 'Your location could not be determined.'
+        );
       },
       {
         enableHighAccuracy: true,
@@ -48,7 +65,7 @@ export const LocationController: React.FC<LocationControllerProps> = ({ onLocati
     return () => {
       isCancelled = true;
     };
-  }, [map, onLocationFound]);
+  }, [map, onLocationFound, onLocationError, enabled]);
 
   return null;
 };

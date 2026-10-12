@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMapEvents } from 'react-leaflet';
 import type { Layer } from 'leaflet';
 import type { Feature, Geometry } from 'geojson';
 import L from 'leaflet';
@@ -26,20 +26,35 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Lets the user pick a location by clicking the map
+const MapClickHandler: React.FC<{ onPick: (coords: LatLngTuple) => void }> = ({ onPick }) => {
+  useMapEvents({
+    click: (event) => onPick([event.latlng.lat, event.latlng.lng]),
+  });
+  return null;
+};
+
 interface HazardMapProps {
   onUserLocationChange?: (coords: LatLngTuple) => void;
+  onLocationError?: (message: string) => void;
 }
 
-export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange }) => {
+export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLocationError }) => {
   // Default fallback center (California)
   const defaultCenter: LatLngTuple = [36.7783, -119.4179];
   const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
+  const [isManualLocation, setIsManualLocation] = useState<boolean>(false);
 
   // Prevents the function from being recreated on every render
   const handleLocationFound = useCallback((coords: LatLngTuple) => {
     setUserLocation(coords);
     onUserLocationChange?.(coords);
   }, [onUserLocationChange]);
+
+  const handleMapPick = useCallback((coords: LatLngTuple) => {
+    setIsManualLocation(true);
+    handleLocationFound(coords);
+  }, [handleLocationFound]);
 
   const [earthquakeData, setEarthquakeData] = useState<HazardFeatureCollection | null>(null);
   const [wildfireData, setWildfireData] = useState<HazardFeatureCollection | null>(null);
@@ -212,12 +227,17 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange }) =>
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
-        <LocationController onLocationFound={handleLocationFound} />
+        <LocationController
+          onLocationFound={handleLocationFound}
+          onLocationError={onLocationError}
+          enabled={!isManualLocation}
+        />
+        <MapClickHandler onPick={handleMapPick} />
 
         {userLocation && (
           <Marker position={userLocation}>
             <Popup>
-              <strong>You are here</strong>
+              <strong>{isManualLocation ? 'Selected location' : 'You are here'}</strong>
             </Popup>
           </Marker>
         )}

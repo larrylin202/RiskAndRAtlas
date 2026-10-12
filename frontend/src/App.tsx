@@ -6,11 +6,12 @@ import type { LatLngTuple } from './types/hazards';
 
 export const App: React.FC = () => {
   const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   return (
     <main style={{ margin: 0, padding: 0, height: '100%', width: '100%', overflow: 'hidden' }}>
-      <HazardMap onUserLocationChange={setUserLocation} />
-      <RiskIndicators userLocation={userLocation} />
+      <HazardMap onUserLocationChange={setUserLocation} onLocationError={setLocationError} />
+      <RiskIndicators userLocation={userLocation} locationError={locationError} />
     </main>
   );
 };
