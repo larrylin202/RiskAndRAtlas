@@ -37,7 +37,13 @@ def create_app():
             return {"status": "unhealthy", "service": "R&R Atlas Backend", "database": "unreachable"}, 503
         return {"status": "healthy", "service": "R&R Atlas Backend", "database": "ok", "feeds": feeds}
 
-    # Register the hazards blueprint we just created
+    if not app.config["NOMINATIM_USER_AGENT"]:
+        raise RuntimeError("Set NOMINATIM_USER_AGENT in backend/.env")
+
+
+    from .api.geocode import geocode_bp
+    app.register_blueprint(geocode_bp, url_prefix="/api/geocode")
+    
     from .api.hazards import hazards_bp
     app.register_blueprint(hazards_bp, url_prefix="/api/hazards")
     

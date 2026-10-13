@@ -13,6 +13,7 @@ import type { HazardFeatureCollection, HazardProperties, LatLngTuple } from '../
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import MapSearchBar from '../MapSearchBar';
 
 const DefaultIcon = L.icon({
   iconUrl: markerIcon,
@@ -86,7 +87,7 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
     fetch('/api/hazards/wildfires')
       .then((res) => {
         if (!res.ok) {
-          throw new Error('HTTP error: ${res.status}');
+          throw new Error(`HTTP error: ${res.status}`);
         }
         return res.json() as Promise<HazardFeatureCollection>;
       })
@@ -126,7 +127,7 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
 
       const buildPopup = () => {
         const div = document.createElement('div');
-        div.className = "EarthquakePopup";
+        div.className = "hazardPopup";
 
         const title = document.createElement('h4');
 
@@ -217,6 +218,12 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
         </div>
       )}
 
+      {/* <MapSearchBar
+        onSearch={console.log()}
+      > */}
+
+      {/* </MapSearchBar> */}
+
       <MapContainer
         center={defaultCenter}
         zoom={6}
@@ -252,7 +259,6 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
 
         {wildfireData && (
           <GeoJSON
-            key={JSON.stringify(wildfireData)}
             data={wildfireData}
             onEachFeature={onEachHazardFeature}
             style={setWildfireStyle}

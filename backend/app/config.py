@@ -14,6 +14,7 @@ def _sqlalchemy_url(url):
 
 
 class Config:
+    # .env variables
     SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-key")
     #DATABASE_URI = os.getenv("DATABASE_URI", "mongodb://localhost:27017/rr_atlas")
     AIRNOW_API_KEY = os.getenv("AIRNOW_API_KEY")
@@ -30,3 +31,16 @@ class Config:
     # refresh hazard feeds in the background when they're older than this (services/refresh.py)
     AUTO_INGEST = os.getenv("AUTO_INGEST", "true").lower() == "true"
     INGEST_STALE_MINUTES = int(os.getenv("INGEST_STALE_MINUTES", "10"))
+    NOMINATIM_BASE_URL = os.getenv("NOMINATIM_BASE_URL") or 'https://nominatim.openstreetmap.org'
+    NOMINATIM_USER_AGENT = os.getenv("NOMINATIM_USER_AGENT")
+    NOMINATIM_TIMEOUT = float(os.getenv("NOMINATIM_TIMEOUT")) or 10.0
+
+    # geocode settings
+    MAX_QUERY_LENGTH = 200
+    MAX_RESULTS = 5
+
+    # cache settings
+    MIN_SECONDS_BETWEEN_CALLS = 1.0
+    MAX_WAIT_SECONDS = 3.0
+    MAX_CACHE_SIZE = 100
+    CACHE_SECONDS = 6 * 60 * 60 # 6 hours

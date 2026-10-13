@@ -6,6 +6,8 @@ backend/app/__pycache__/
 backend/app/api/__pycache__/
 backend/.env
 backend/.pytest_cache/
+backend/app/api/services/__pycache__/
+backend/tests/__pycache__/
 *.pyc
 
 # Node / Frontend
