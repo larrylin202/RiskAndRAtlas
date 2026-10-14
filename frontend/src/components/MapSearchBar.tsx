@@ -28,7 +28,7 @@ export const MapSearchBar: React.FC<MapSearchBarProps> = ({ onSearch, disabled =
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 maxLength={MAX_SEARCH_LENGTH}
-                placeholder="Search map..."
+                placeholder="Search for a city, address, or landmark"
                 autoComplete="off"
             />
             <button type="submit" disabled={disabled || !trimmed}>
