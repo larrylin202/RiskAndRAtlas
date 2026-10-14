@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMapEvents, ZoomControl } from 'react-leaflet';
 import type { Layer } from 'leaflet';
 import type { Feature, Geometry } from 'geojson';
 import L from 'leaflet';
@@ -13,6 +13,7 @@ import type { HazardFeatureCollection, HazardProperties, LatLngTuple } from '../
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import MapSearch from '../MapSearch';
 
 const DefaultIcon = L.icon({
   iconUrl: markerIcon,
@@ -86,7 +87,7 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
     fetch('/api/hazards/wildfires')
       .then((res) => {
         if (!res.ok) {
-          throw new Error('HTTP error: ${res.status}');
+          throw new Error(`HTTP error: ${res.status}`);
         }
         return res.json() as Promise<HazardFeatureCollection>;
       })
@@ -104,7 +105,7 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
     fetch('/api/hazards/floods')
       .then((res) => {
         if (!res.ok) {
-          throw new Error('HTTP error: ${res.status}');
+          throw new Error(`HTTP error: ${res.status}`);
         }
         return res.json() as Promise<HazardFeatureCollection>;
       })
@@ -114,6 +115,8 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
       })
       .catch((err: Error) => {
         console.error('Failed to load hazard GeoJSON:', err);
+        setError(err.message);
+        setIsLoading(false);
       });
   }, []);
 
@@ -126,7 +129,7 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
 
       const buildPopup = () => {
         const div = document.createElement('div');
-        div.className = "EarthquakePopup";
+        div.className = "hazard-popup";
 
         const title = document.createElement('h4');
 
@@ -217,11 +220,18 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
         </div>
       )}
 
+      <MapSearch onSelectPlace={console.log}/>
+
       <MapContainer
         center={defaultCenter}
         zoom={6}
+        zoomControl={false}
         style={{ height: '100%', width: '100%' }}
       >
+        <ZoomControl 
+          position='topright'
+        />
+
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -252,7 +262,6 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
 
         {wildfireData && (
           <GeoJSON
-            key={JSON.stringify(wildfireData)}
             data={wildfireData}
             onEachFeature={onEachHazardFeature}
             style={setWildfireStyle}
@@ -261,7 +270,6 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
 
         {floodData && (
           <GeoJSON
-            key={JSON.stringify(wildfireData)}
             data={floodData}
             onEachFeature={onEachHazardFeature}
           />

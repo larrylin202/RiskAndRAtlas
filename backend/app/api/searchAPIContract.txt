@@ -1,0 +1,25 @@
+GET /api/geocode/search?q=<place or address>
+
+Input rules
+    q is required; trimmed of surrounding spaces; 1-200 characters
+
+200 OK (limit of 5 results)
+    { "results": [ 
+        {
+            "id": 385022717,
+            "lat": 33.8903183,
+            "lon": -117.8854905,
+            "label": "1900, South Associated Road, Fullerton, Orange County, California, 92831, United States",
+            "bounds": [
+            [33.8902683, -117.8855405],
+            [33.8903683, -117.8854405]
+            ]
+        }
+    ] }
+
+200 No Results
+    { "results": []}
+
+400 Bad Request     q missing, blank, or too long   -> { "error": "..." }
+429 Too Many Req.   our own rate limit was hit      -> { "error": "..." }
+502 Bad Gateway     Nominatim failed or timed out   -> { "error": "..." }
