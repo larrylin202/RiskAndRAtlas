@@ -33,7 +33,7 @@ class Config:
     INGEST_STALE_MINUTES = int(os.getenv("INGEST_STALE_MINUTES", "10"))
     NOMINATIM_BASE_URL = os.getenv("NOMINATIM_BASE_URL") or 'https://nominatim.openstreetmap.org'
     NOMINATIM_USER_AGENT = os.getenv("NOMINATIM_USER_AGENT")
-    NOMINATIM_TIMEOUT = float(os.getenv("NOMINATIM_TIMEOUT")) or 10.0
+    NOMINATIM_TIMEOUT = float(os.getenv("NOMINATIM_TIMEOUT") or 10)
 
     # geocode settings
     MAX_QUERY_LENGTH = 200
