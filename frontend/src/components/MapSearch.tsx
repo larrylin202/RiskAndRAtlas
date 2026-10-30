@@ -12,10 +12,12 @@ type SearchState =
 
 interface MapSearchProps {
     onSelectPlace: (places: Places) => void;
+    initialText?: string;
 }
 
-export const MapSearch: React.FC<MapSearchProps> = ({ onSelectPlace }) => {
+export const MapSearch: React.FC<MapSearchProps> = ({ onSelectPlace, initialText }) => {
     const [search, setSearch] = useState<SearchState>({ status: 'idle'});
+    const [isOpen, setIsOpen] = useState(false);
     const controllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => () => controllerRef.current?.abort(), []);
@@ -25,6 +27,7 @@ export const MapSearch: React.FC<MapSearchProps> = ({ onSelectPlace }) => {
         const controller = new AbortController();
         controllerRef.current = controller;
 
+        setIsOpen(true);
         setSearch({ status: 'loading', query: search_query });
         try {
             const places = await searchMap(search_query, controller.signal);
@@ -39,27 +42,60 @@ export const MapSearch: React.FC<MapSearchProps> = ({ onSelectPlace }) => {
     const handleSelect = (place: Places) => {
         onSelectPlace(place);
         setSearch({ status: 'idle' });
+        setIsOpen(false);
     };
 
+    const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+        if (event.currentTarget.contains(event.relatedTarget)) return;
+        setIsOpen(false);
+    };
+
+    const handleFocus = () => setIsOpen(true);
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === 'Escape') setIsOpen(false);
+    };
+
+    const handleTextChange = (trimmedText: string) => {
+        if (search.status === 'idle' || trimmedText === search.query) return;
+        controllerRef.current?.abort();
+        setSearch({ status: 'idle' });
+        setIsOpen(false);
+    }
+
     return (
-        <div className="place-search-panel">
-            <MapSearchBar onSearch={handleSearch} disabled={search.status === 'loading'} />
+        <div 
+            className="place-search-panel"
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+        >
+            <MapSearchBar 
+                onSearch={handleSearch} 
+                onTextChange={handleTextChange} 
+                busy={search.status === 'loading'} 
+                initialText={initialText}
+            />
 
-            {search.status === 'loading' && <p className="place-search-status">Searching...</p>}
+            {isOpen && search.status === 'loading' && <p className="place-search-status">Searching...</p>}
 
-            {search.status === 'error' && (
+            {isOpen && search.status === 'error' && (
                 <p className="place-search-status place-search-error">{search.message}</p>
             )}
 
-            {search.status === 'done' && search.places.length === 0 && (
+            {isOpen && search.status === 'done' && search.places.length === 0 && (
                 <p className="place-search-status">No places found for "{search.query}".</p>
             )}
 
-            {search.status === 'done' && search.places.length > 0 && (
+            {isOpen && search.status === 'done' && search.places.length > 0 && (
                 <ul className="place-search-results">
                     {search.places.map((place) => (
                         <li key={place.id}>
-                            <button type="button" onClick={() => handleSelect(place)}>
+                            <button 
+                                type="button" 
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => handleSelect(place)}
+                            >
                                 <span className="place-label">{place.label}</span>
                             </button>
                         </li>

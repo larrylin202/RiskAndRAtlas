@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMapEvents, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Marker, CircleMarker, Popup, useMapEvents, ZoomControl } from 'react-leaflet';
 import type { Layer } from 'leaflet';
 import type { Feature, Geometry } from 'geojson';
 import L from 'leaflet';
@@ -14,6 +14,8 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import MapSearch from '../MapSearch';
+import FlyToPlace from '../FlyToPlace';
+import type { Places } from '../../types/places'
 
 const DefaultIcon = L.icon({
   iconUrl: markerIcon,
@@ -27,13 +29,15 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Lets the user pick a location by clicking the map
-const MapClickHandler: React.FC<{ onPick: (coords: LatLngTuple) => void }> = ({ onPick }) => {
+// Lets the user pick a location by double-clicking the map
+const MapDoubleClickHandler: React.FC<{ onPick: (coords: LatLngTuple) => void }> = ({ onPick }) => {
   useMapEvents({
-    click: (event) => onPick([event.latlng.lat, event.latlng.lng]),
+    dblclick: (event) => onPick([event.latlng.lat, event.latlng.lng]),
   });
   return null;
 };
+
+const formatCoords = ([lat, lon]: LatLngTuple) => `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
 
 interface HazardMapProps {
   onUserLocationChange?: (coords: LatLngTuple) => void;
@@ -44,7 +48,23 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
   // Default fallback center (California)
   const defaultCenter: LatLngTuple = [36.7783, -119.4179];
   const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
-  const [isManualLocation, setIsManualLocation] = useState<boolean>(false);
+  const [selectedPlace, setSelectedPlace] = useState<Places | null>(null);
+  const [pickedLocation, setPickedLocation] = useState<LatLngTuple | null>(null);
+  const hasChosenLocation = selectedPlace !== null || pickedLocation !== null;
+  const [pickCount, setPickCount] = useState(0);
+
+  const handleSelectPlace = useCallback((place: Places) => {
+    setSelectedPlace(place);
+    setPickedLocation(null);
+    onUserLocationChange?.([place.lat, place.lon]);
+  }, [onUserLocationChange]);
+
+  const handleMapPick = useCallback((coords: LatLngTuple) => {
+    setPickedLocation(coords);
+    setSelectedPlace(null);
+    setPickCount((count) => count + 1);
+    onUserLocationChange?.(coords);
+  }, [onUserLocationChange]);
 
   // Prevents the function from being recreated on every render
   const handleLocationFound = useCallback((coords: LatLngTuple) => {
@@ -52,10 +72,6 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
     onUserLocationChange?.(coords);
   }, [onUserLocationChange]);
 
-  const handleMapPick = useCallback((coords: LatLngTuple) => {
-    setIsManualLocation(true);
-    handleLocationFound(coords);
-  }, [handleLocationFound]);
 
   const [earthquakeData, setEarthquakeData] = useState<HazardFeatureCollection | null>(null);
   const [wildfireData, setWildfireData] = useState<HazardFeatureCollection | null>(null);
@@ -220,12 +236,17 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
         </div>
       )}
 
-      <MapSearch onSelectPlace={console.log}/>
+      <MapSearch 
+        key={pickCount}
+        initialText={pickedLocation ? formatCoords(pickedLocation) : ''}
+        onSelectPlace={handleSelectPlace}
+      />
 
       <MapContainer
         center={defaultCenter}
         zoom={6}
         zoomControl={false}
+        doubleClickZoom={false}
         style={{ height: '100%', width: '100%' }}
       >
         <ZoomControl 
@@ -240,14 +261,37 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
         <LocationController
           onLocationFound={handleLocationFound}
           onLocationError={onLocationError}
-          enabled={!isManualLocation}
+          enabled={!hasChosenLocation}
         />
-        <MapClickHandler onPick={handleMapPick} />
+
+        <MapDoubleClickHandler onPick={handleMapPick} />
+        
+        <FlyToPlace place={selectedPlace} />
 
         {userLocation && (
-          <Marker position={userLocation}>
+          <CircleMarker
+            center={userLocation}
+            radius={8}
+            pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#2563eb', fillOpacity: 1 }}
+          >
             <Popup>
-              <strong>{isManualLocation ? 'Selected location' : 'You are here'}</strong>
+              <strong>You are here</strong>
+            </Popup>
+          </CircleMarker>
+        )}
+
+        {selectedPlace && (
+          <Marker position={[selectedPlace.lat, selectedPlace.lon]}>
+            <Popup>{selectedPlace.label}</Popup>
+          </Marker>
+        )}
+
+        {pickedLocation && (
+          <Marker position={pickedLocation}>
+            <Popup>
+              <strong>Selected location</strong>
+              <br />
+              {formatCoords(pickedLocation)}
             </Popup>
           </Marker>
         )}
