@@ -1,29 +1,50 @@
+/* frontend/src/styles/index.css */
+
+:root {
+  --ui-bg: #ffffff;
+  --ui-text: #1f2937;
+  --ui-muted: #6b7280;
+  --ui-border: #d1d5db;
+  --ui-hover: #f1f5f9;
+  --ui-accent: #1e40af;
+  --ui-accent-hover: #1e3a8a;
+  --ui-error: #b91c1c;
+  --ui-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  --ui-radius: 10px;
+}
+
+html,
+body,
 #root {
   height: 100%;
 }
 
-
 body {
   margin: 0;
-  height: 100%;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--ui-text);
 }
 
-html {
-  height: 100%;
+/* Leaflet sets its own font; use the page font instead */
+.leaflet-container {
+  font-family: inherit;
 }
 
-.hazardPopup {
-  font-family: sans-serif;
+/* ---------- Hazard popups ---------- */
+
+.hazard-popup {
   font-size: 13px;
 }
 
-.hazardPopup h4 {
-  margin: 0 0 px 0;
+.hazard-popup h4 {
+  margin: 0 0 4px 0;
 }
 
-.hazardPopup p {
+.hazard-popup p {
   margin: 0;
 }
+
+/* ---------- Utilities ---------- */
 
 .visually-hidden {
   position: absolute;
@@ -35,4 +56,129 @@ html {
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ---------- Place search ---------- */
+
+/* Same left edge and width as the risk panel (300px + 2 × 20px padding),
+   and above it so results open over it */
+.place-search-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(340px, calc(100% - 40px));
+}
+
+/* The bar: 6px padding + 40px controls = 52px tall,
+   so it ends at 72px, just above the risk panel at 80px */
+.map-search {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: var(--ui-bg);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+}
+
+.map-search input,
+.map-search button {
+  box-sizing: border-box;
+  min-height: 40px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.map-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  color: var(--ui-text);
+}
+
+.map-search input::placeholder {
+  color: var(--ui-muted);
+}
+
+.map-search button {
+  padding: 0 14px;
+  border: none;
+  background: var(--ui-accent);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map-search button:hover:not(:disabled):not([aria-disabled="true"]) {
+  filter: brightness(1.1);
+}
+
+.map-search button:disabled,
+.map-search button[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.map-search input:focus-visible,
+.map-search button:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+
+/* "Searching...", "No places found", and errors */
+.place-search-status {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--ui-bg);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  font-size: 14px;
+  color: var(--ui-muted);
+}
+
+.place-search-error {
+  color: var(--ui-error);
+}
+
+/* Results dropdown */
+.place-search-results {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  background: var(--ui-bg);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+}
+
+.place-search-results button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ui-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.place-search-results button:hover,
+.place-search-results button:focus-visible {
+  background: var(--ui-hover);
+}
+
+.place-search-results button:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: -2px;
 }

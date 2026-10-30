@@ -116,7 +116,7 @@ const RiskIndicators: React.FC<RiskIndicatorsProps> = ({ userLocation, locationE
     <section
       style={{
         position: 'absolute',
-        top: '20px',
+        top: '80px',
         left: '20px',
         zIndex: 1000,
         width: '300px',

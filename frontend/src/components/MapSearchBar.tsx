@@ -2,37 +2,50 @@ import React, { useState } from 'react';
 
 interface MapSearchBarProps {
     onSearch: (name: string) => void;
-    disabled?: boolean;
+    onTextChange?: (trimmedText: string) => void;
+    busy?: boolean;
+    initialText?: string;
 }
 
 const MAX_SEARCH_LENGTH = 200;
 
-export const MapSearchBar: React.FC<MapSearchBarProps> = ({ onSearch, disabled = false }) => {
-    const [text, setText] = useState('');
+export const MapSearchBar: React.FC<MapSearchBarProps> = ({ onSearch, onTextChange, busy = false, initialText = '' }) => {
+    const [text, setText] = useState(initialText);
     const trimmed = text.trim();
+
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        setText(value);
+        onTextChange?.(value.trim());
+    }
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (!trimmed) return;
+        if (!trimmed || busy) return;
         onSearch(trimmed);
     };
 
     return (
         <form className="map-search" role="search" onSubmit={handleSubmit}>
             <label htmlFor="map-search-input" className="visually-hidden">
-                Search map...
+                Search for a location
             </label>
             <input
                 id="map-search-input"
                 type="search"
                 value={text}
-                onChange={(event) => setText(event.target.value)}
+                onChange={handleChange}
                 maxLength={MAX_SEARCH_LENGTH}
-                placeholder="Search map..."
+                placeholder="Search for a city, address, or landmark"
                 autoComplete="off"
             />
-            <button type="submit" disabled={disabled || !trimmed}>
-                Search
+            <button 
+                type="submit"  
+                disabled={!trimmed}
+                aria-disabled={busy}
+                onMouseDown={(event) => event.preventDefault()}
+            >
+                {busy ? 'Searching...' : 'Search'}
             </button>
         </form>
     );
