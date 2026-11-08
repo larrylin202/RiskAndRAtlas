@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import type { LatLngTuple } from '../../types/hazards';
 
@@ -13,10 +12,29 @@ interface RiskScoreResponse {
   earthquake_count: number;
   latitude: number;
   longitude: number;
+
   strongest_earthquake: {
     age_days: number;
     distance_km: number;
     magnitude: number;
+    score: number;
+  } | null;
+
+  wildfire_risk: number | null;
+  wildfire_count: number;
+  strongest_wildfire: {
+    title: string | null;
+    size_acres: number | null;
+    distance_km: number;
+    score: number;
+  } | null;
+
+  flood_risk: number | null;
+  flood_gauge_count: number;
+  nearest_flood_gauge: {
+    gauge_id: string;
+    title: string | null;
+    distance_km: number;
     score: number;
   } | null;
 }
@@ -152,6 +170,8 @@ const RiskIndicators: React.FC<RiskIndicatorsProps> = ({ userLocation, locationE
 
       <h3 style={sectionHeadingStyle}>Hazard Risks</h3>
 
+      {/* EARTHQUAKE RISK */}
+
       <div style={{ ...indicatorStyle, borderBottom: 'none' }}>
         <div>
           <p style={labelStyle}>Earthquake Risk</p>
@@ -191,21 +211,89 @@ const RiskIndicators: React.FC<RiskIndicatorsProps> = ({ userLocation, locationE
         </div>
       )}
 
+      {/* WILDFIRE RISK */}
+
       <div style={indicatorStyle}>
         <div>
           <p style={labelStyle}>Wildfire Risk</p>
-          <p style={descriptionStyle}>Scoring integration pending</p>
+          <p style={descriptionStyle}>
+            Nearby fire perimeters: {riskData?.wildfire_count ?? '--'}
+          </p>
         </div>
-        {renderPending()}
+        <strong style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>
+          {riskData && !error
+            ? formatScore(riskData.wildfire_risk)
+            : '-- / 100'}
+        </strong>
       </div>
+
+      {riskData?.strongest_wildfire && !error && (
+        <div
+          style={{
+            margin: '4px 0 12px',
+            padding: '10px',
+            backgroundColor: '#f9fafb',
+            borderRadius: '6px',
+          }}
+        >
+          <p style={{ ...labelStyle, fontSize: '13px' }}>
+            Highest-Scoring Fire
+          </p>
+          <p style={descriptionStyle}>
+            {riskData.strongest_wildfire.title ?? 'Unnamed fire'}
+          </p>
+          <p style={descriptionStyle}>
+            Distance:{' '}
+            {riskData.strongest_wildfire.distance_km.toFixed(1)} km
+          </p>
+          <p style={descriptionStyle}>
+            Acreage:{' '}
+            {riskData.strongest_wildfire.size_acres !== null
+              ? `${riskData.strongest_wildfire.size_acres.toLocaleString()} acres`
+              : 'Unknown'}
+          </p>
+        </div>
+      )}
+
+      {/* FLOOD RISK */}
 
       <div style={indicatorStyle}>
         <div>
           <p style={labelStyle}>Flood Risk</p>
-          <p style={descriptionStyle}>Scoring integration pending</p>
+          <p style={descriptionStyle}>
+            Nearby active flood gauges: {riskData?.flood_gauge_count ?? '--'}
+          </p>
         </div>
-        {renderPending()}
+        <strong style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>
+          {riskData && !error
+            ? formatScore(riskData.flood_risk)
+            : '-- / 100'}
+        </strong>
       </div>
+
+      {riskData?.nearest_flood_gauge && !error && (
+        <div
+          style={{
+            margin: '4px 0 12px',
+            padding: '10px',
+            backgroundColor: '#f9fafb',
+            borderRadius: '6px',
+          }}
+        >
+          <p style={{ ...labelStyle, fontSize: '13px' }}>
+            Nearest Flood Gauge
+          </p>
+          <p style={descriptionStyle}>
+            {riskData.nearest_flood_gauge.title ?? 'Unnamed gauge'}
+          </p>
+          <p style={descriptionStyle}>
+            Distance:{' '}
+            {riskData.nearest_flood_gauge.distance_km.toFixed(1)} km
+          </p>
+        </div>
+      )}
+
+      {/* AIR QUALITY */}
 
       <div style={indicatorStyle}>
         <div>
@@ -214,6 +302,8 @@ const RiskIndicators: React.FC<RiskIndicatorsProps> = ({ userLocation, locationE
         </div>
         {renderPending()}
       </div>
+
+      {/* COMMUNITY RESILIENCE */}
 
       <h3 style={sectionHeadingStyle}>Community Resilience</h3>
 
@@ -240,6 +330,8 @@ const RiskIndicators: React.FC<RiskIndicatorsProps> = ({ userLocation, locationE
         </div>
         {renderPending()}
       </div>
+
+      {/* COMBINED RISK SCORE */}
 
       <div
         style={{

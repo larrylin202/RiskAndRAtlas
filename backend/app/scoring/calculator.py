@@ -1,68 +1,48 @@
 def normalize(value: float, minimum: float, maximum: float) -> float:
-    """
-    Convert a value into a 0–100 scale.
-
-    Values at or below minimum become 0.
-    Values at or above maximum become 100.
-    """
+    """Convert a value into a 0–100 scale."""
 
     if maximum <= minimum:
         raise ValueError("maximum must be greater than minimum")
 
     normalized = (value - minimum) / (maximum - minimum)
-
-    # Keep the result between 0 and 100.
     normalized = max(0.0, min(1.0, normalized))
 
     return normalized * 100
 
+
 def distance_score(distance_km: float, maximum_distance_km: float) -> float:
     """
-    Convert distance from a hazard into a 0–100 risk contribution.
-
     0 km = 100 risk
-    maximum distance or farther = 0 risk
+    Maximum distance or farther = 0 risk
     """
 
     if maximum_distance_km <= 0:
         raise ValueError("maximum_distance_km must be greater than 0")
 
     score = 1 - (distance_km / maximum_distance_km)
-
-    # Keep the result between 0 and 1 before converting to 0–100.
     score = max(0.0, min(1.0, score))
 
     return score * 100
 
-def recency_score(age_days: float, maximum_age_days: float) -> float:
-    """
-    Convert the age of a hazard event into a 0–100 risk contribution.
 
-    0 days old = 100 risk
-    maximum age or older = 0 risk
-    """
+def recency_score(age_days: float, maximum_age_days: float) -> float:
+    """Convert the age of an event into a 0–100 contribution."""
 
     if maximum_age_days <= 0:
         raise ValueError("maximum_age_days must be greater than 0")
 
     score = 1 - (age_days / maximum_age_days)
-
-    # Keep the result between 0 and 1.
     score = max(0.0, min(1.0, score))
 
     return score * 100
+
 
 def earthquake_score(
     magnitude: float,
     distance_km: float,
     age_days: float,
 ) -> float:
-    """
-    Calculate a preliminary 0–100 earthquake risk contribution.
-
-    This is a preliminary project formula and is expected to be
-    adjusted as the team develops the final scoring methodology.
-    """
+    """Calculate a preliminary earthquake risk score."""
 
     magnitude_score = normalize(magnitude, 0.0, 6.0)
     distance_component = distance_score(distance_km, 50.0)
@@ -76,29 +56,46 @@ def earthquake_score(
 
     return round(score, 2)
 
+
 def wildfire_score(
-    size_acres: float,
+    size_acres: float | None,
     distance_km: float,
-    age_days: float,
 ) -> float:
     """
-    Calculate a preliminary 0–100 wildfire risk contribution.
+    Calculate a preliminary wildfire risk score.
 
-    This is a preliminary project formula and is expected to be
-    adjusted as the team develops the final scoring methodology.
+    If acreage is available:
+        50% fire size + 50% distance
+
+    If acreage is missing:
+        100% distance
     """
 
-    size_score = normalize(size_acres, 0.0, 10000.0)
     distance_component = distance_score(distance_km, 50.0)
-    recency_component = recency_score(age_days, 30.0)
+
+    if size_acres is None:
+        return round(distance_component, 2)
+
+    size_component = normalize(size_acres, 0.0, 10000.0)
 
     score = (
-        size_score * 0.5
-        + distance_component * 0.3
-        + recency_component * 0.2
+        size_component * 0.5
+        + distance_component * 0.5
     )
 
     return round(score, 2)
+
+
+def flood_score(distance_km: float) -> float:
+    """
+    Calculate a preliminary flood risk score.
+
+    Active flooding gauges closer to the selected location
+    contribute a higher score.
+    """
+
+    return round(distance_score(distance_km, 50.0), 2)
+
 
 def combined_risk_score(
     earthquake: float | None = None,
@@ -109,13 +106,7 @@ def combined_risk_score(
     shelter_readiness: float | None = None,
     fire_station_readiness: float | None = None,
 ) -> float:
-    """
-    Calculate a preliminary combined risk score from the
-    available risk and resilience components.
-
-    Components that are not yet available are excluded from
-    the calculation.
-    """
+    """Average the available risk and resilience components."""
 
     components = [
         earthquake,
@@ -138,3 +129,41 @@ def combined_risk_score(
     score = sum(available_components) / len(available_components)
 
     return round(score, 2)
+
+def nws_alert_score(severity, urgency, certainty):
+    """Calculate a provisional risk score for an NWS flood alert."""
+
+    severity_scores = {
+        "Extreme": 100,
+        "Severe": 85,
+        "Moderate": 65,
+        "Minor": 40,
+        "Unknown": 0,
+    }
+
+    urgency_scores = {
+        "Immediate": 100,
+        "Expected": 80,
+        "Future": 50,
+        "Past": 0,
+        "Unknown": 0,
+    }
+
+    certainty_scores = {
+        "Observed": 100,
+        "Likely": 85,
+        "Possible": 60,
+        "Unlikely": 25,
+        "Unknown": 0,
+    }
+
+    severity_score = severity_scores.get(severity, 0)
+    urgency_score = urgency_scores.get(urgency, 0)
+    certainty_score = certainty_scores.get(certainty, 0)
+
+    return round(
+        severity_score * 0.50
+        + urgency_score * 0.30
+        + certainty_score * 0.20,
+        2,
+    )

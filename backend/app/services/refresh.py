@@ -15,11 +15,16 @@ from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
 from ..extensions import db
 from ..models import IngestRun
-from . import usgs, nifc, rtfi
+from . import usgs, nifc, rtfi, nws
 
 logger = logging.getLogger(__name__)
 
-SERVICES = {"usgs": usgs, "nifc": nifc, "rtfi": rtfi}
+SERVICES = {
+    "usgs": usgs,
+    "nifc": nifc,
+    "rtfi": rtfi,
+    "nws": nws,
+}
 
 CHECK_INTERVAL_S = 60  # per-process throttle so not every request touches ingest_runs
 

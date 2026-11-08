@@ -53,6 +53,10 @@ def get_wildfires():
 def get_floods():
     return _feature_collection("flood")
 
+@hazards_bp.route("/flood-alerts", methods=["GET"])
+def get_flood_alerts():
+    return _feature_collection("flood_alert")
+
 @hazards_bp.route("/air_quality", methods=["GET"])
 def get_air_quality():
     zipcode = request.args.get('zip')
