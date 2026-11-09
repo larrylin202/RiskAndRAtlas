@@ -4,6 +4,7 @@ import SidebarSearch from './SidebarSearch';
 import useRiskScore from '../../hooks/useRiskScore';
 import type { LatLngTuple } from '../../types/hazards';
 import type { Places } from '../../types/places';
+import { getRiskLevel } from '../../utils/riskLevel';
 
 import atlasTitle from '../../assets/sidebar/atlas-title.png';
 import earthquakeIcon from '../../assets/sidebar/earthquake.svg';
@@ -17,10 +18,10 @@ import fireStationIcon from '../../assets/sidebar/fire-station.svg';
 type RiskKey = 'earthquake' | 'wildfire' | 'airQuality' | 'flood';
 
 const RISKS: { key: RiskKey; label: string; icon: string; color: string }[] = [
-  { key: 'earthquake', label: 'Earthquake Risk', icon: earthquakeIcon, color: '#f4c46a' },
-  { key: 'wildfire', label: 'Wildfire Risk', icon: wildfireIcon, color: '#e06646' },
-  { key: 'airQuality', label: 'Air Quality Risk', icon: airQualityIcon, color: '#a3b899' },
-  { key: 'flood', label: 'Flood Risk', icon: floodIcon, color: '#bac7d5' },
+  { key: 'earthquake', label: 'Earthquake', icon: earthquakeIcon, color: '#f4c46a' },
+  { key: 'wildfire', label: 'Wildfire', icon: wildfireIcon, color: '#e06646' },
+  { key: 'airQuality', label: 'Air Quality', icon: airQualityIcon, color: '#a3b899' },
+  { key: 'flood', label: 'Flood', icon: floodIcon, color: '#bac7d5' },
 ];
 
 const FACILITIES = [
@@ -33,13 +34,6 @@ const PENDING_SCORE = '--';
 
 const formatScore = (score: number | null | undefined) =>
   typeof score === 'number' && Number.isFinite(score) ? score.toFixed(1) : PENDING_SCORE;
-
-const describeLevel = (score: number) =>
-  score >= 70
-    ? 'Elevated risk — review local preparedness guidance.'
-    : score >= 40
-      ? 'Moderate risk — stay informed and make a plan.'
-      : 'Lower risk — continue routine preparedness.';
 
 interface SidebarProps {
   // Location the scores are computed for (search result, map pick, or GPS)
@@ -83,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     return (
       <>
-        <p>{describeLevel(score)}</p>
+        <p>{getRiskLevel(score).description}</p>
         <p>Nearby earthquakes: {riskData.earthquake_count}</p>
         {riskData.strongest_earthquake && (
           <p>
@@ -138,6 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   label={label}
                   accent={color}
                   score={risk.status === 'loading' ? '...' : formatScore(score)}
+                  level={score !== null && Number.isFinite(score) ? getRiskLevel(score) : null}
                   isOpen={openRow === label}
                   onToggle={() => toggleRow(label)}
                 >

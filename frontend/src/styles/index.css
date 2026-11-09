@@ -296,7 +296,8 @@ body {
   --accent: var(--atlas-ink);
   position: relative;
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) 68px 40px;
+  /* icon | label | score | severity chip | chevron (+ accent strip) */
+  grid-template-columns: 58px minmax(0, 1fr) 52px 96px 40px;
   align-items: center;
   width: 100%;
   min-height: 48px;
@@ -318,6 +319,17 @@ body {
 .data-row:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgb(26 26 26 / 10%);
+}
+
+/* Open row: inset ink border so the expanded state is visible at a glance */
+.data-row[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 2px var(--atlas-ink);
+}
+
+.data-row[aria-expanded="true"]:hover {
+  box-shadow:
+    inset 0 0 0 2px var(--atlas-ink),
+    0 4px 10px rgb(26 26 26 / 10%);
 }
 
 .data-row:active {
@@ -348,9 +360,49 @@ body {
   line-height: normal;
 }
 
-.info-icon {
-  width: 15px;
-  height: 15px;
+.risk-level-cell {
+  display: flex;
+  align-items: center;
+}
+
+/* Severity chip: an escalating ink scale, deliberately colourless so it never
+   competes with the hazard-identity accent strip. The word carries the meaning. */
+.risk-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--atlas-ink-muted);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.risk-chip--low {
+  color: var(--atlas-ink-muted);
+  background: transparent;
+}
+
+.risk-chip--moderate {
+  border-color: transparent;
+  color: var(--atlas-ink);
+  background: #dcd8d8;
+}
+
+.risk-chip--elevated {
+  border-color: var(--atlas-ink);
+  color: #ffffff;
+  background: var(--atlas-ink);
+}
+
+.row-chevron {
+  color: var(--atlas-ink-muted);
+  transition: transform 150ms ease;
+}
+
+.data-row[aria-expanded="true"] .row-chevron {
+  transform: rotate(180deg);
+  color: var(--atlas-ink);
 }
 
 .row-detail {
@@ -374,7 +426,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .data-row {
+  .data-row,
+  .row-chevron {
     transition: none;
   }
 }
