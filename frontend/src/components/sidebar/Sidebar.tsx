@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import DataRow from './DataRow';
 import SidebarSearch from './SidebarSearch';
-import useRiskScore from '../../hooks/useRiskScore';
+import useRiskScore, { type RiskScoreResponse } from '../../hooks/useRiskScore';
 import type { LatLngTuple } from '../../types/hazards';
 import type { Places } from '../../types/places';
 import { getRiskLevel } from '../../utils/riskLevel';
@@ -68,7 +68,56 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const scoreFor = (key: RiskKey): number | null => {
     if (!riskData) return null;
     if (key === 'earthquake') return riskData.earthquake_risk;
-    // Other hazards are not scored by the backend yet
+    if (key === 'wildfire') return riskData.wildfire_risk;
+    if (key === 'flood') return riskData.flood_risk;
+    // Air quality is not scored by the backend yet
+    return null;
+  };
+
+  const hazardDetail = (key: RiskKey, data: RiskScoreResponse): React.ReactNode => {
+    if (key === 'earthquake') {
+      const quake = data.strongest_earthquake;
+      return (
+        <>
+          <p>Nearby earthquakes: {data.earthquake_count}</p>
+          {quake && (
+            <p>
+              Highest-scoring event: magnitude {quake.magnitude.toFixed(1)},{' '}
+              {quake.distance_km.toFixed(1)} km away
+            </p>
+          )}
+        </>
+      );
+    }
+    if (key === 'wildfire') {
+      const fire = data.strongest_wildfire;
+      return (
+        <>
+          <p>Nearby fire perimeters: {data.wildfire_count}</p>
+          {fire && (
+            <p>
+              Highest-scoring fire: {fire.title ?? 'Unnamed fire'}, {fire.distance_km.toFixed(1)} km
+              away
+              {fire.size_acres !== null && `, ${fire.size_acres.toLocaleString()} acres`}
+            </p>
+          )}
+        </>
+      );
+    }
+    if (key === 'flood') {
+      const gauge = data.nearest_flood_gauge;
+      return (
+        <>
+          <p>Nearby active flood gauges: {data.flood_gauge_count}</p>
+          {gauge && (
+            <p>
+              Nearest flood gauge: {gauge.title ?? 'Unnamed gauge'}, {gauge.distance_km.toFixed(1)}{' '}
+              km away
+            </p>
+          )}
+        </>
+      );
+    }
     return null;
   };
 
@@ -76,19 +125,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (!location) return 'Choose a location to see this score.';
     if (risk.status === 'loading') return 'Loading risk score...';
     if (risk.status === 'error') return risk.message;
-    if (key !== 'earthquake') return 'Scoring integration pending.';
+    if (key === 'airQuality') return 'Scoring integration pending.';
     if (score === null || !riskData) return 'No score available for this location.';
 
     return (
       <>
         <p>{getRiskLevel(score).description}</p>
-        <p>Nearby earthquakes: {riskData.earthquake_count}</p>
-        {riskData.strongest_earthquake && (
-          <p>
-            Highest-scoring event: magnitude {riskData.strongest_earthquake.magnitude.toFixed(1)},{' '}
-            {riskData.strongest_earthquake.distance_km.toFixed(1)} km away
-          </p>
-        )}
+        {hazardDetail(key, riskData)}
       </>
     );
   };

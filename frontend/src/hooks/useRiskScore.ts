@@ -13,6 +13,22 @@ export interface RiskScoreResponse {
     magnitude: number;
     score: number;
   } | null;
+  wildfire_risk: number | null;
+  wildfire_count: number;
+  strongest_wildfire: {
+    title: string | null;
+    size_acres: number | null;
+    distance_km: number;
+    score: number;
+  } | null;
+  flood_risk: number | null;
+  flood_gauge_count: number;
+  nearest_flood_gauge: {
+    gauge_id: string;
+    title: string | null;
+    distance_km: number;
+    score: number;
+  } | null;
 }
 
 type RiskScoreState =
