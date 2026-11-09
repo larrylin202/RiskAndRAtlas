@@ -6,28 +6,32 @@ import type { LatLngTuple } from '../../types/hazards';
 import type { Places } from '../../types/places';
 import { getRiskLevel } from '../../utils/riskLevel';
 
-import atlasTitle from '../../assets/sidebar/atlas-title.png';
-import earthquakeIcon from '../../assets/sidebar/earthquake.svg';
-import wildfireIcon from '../../assets/sidebar/wildfire.svg';
-import airQualityIcon from '../../assets/sidebar/air-quality.svg';
-import floodIcon from '../../assets/sidebar/flood.svg';
-import hospitalIcon from '../../assets/sidebar/hospital.svg';
-import shelterIcon from '../../assets/sidebar/shelter.svg';
-import fireStationIcon from '../../assets/sidebar/fire-station.svg';
+import {
+  AirQualityIcon,
+  EarthquakeIcon,
+  FireStationIcon,
+  FloodIcon,
+  HospitalIcon,
+  ShelterIcon,
+  WildfireIcon,
+} from './icons';
 
 type RiskKey = 'earthquake' | 'wildfire' | 'airQuality' | 'flood';
 
-const RISKS: { key: RiskKey; label: string; icon: string; color: string }[] = [
-  { key: 'earthquake', label: 'Earthquake', icon: earthquakeIcon, color: '#f4c46a' },
-  { key: 'wildfire', label: 'Wildfire', icon: wildfireIcon, color: '#e06646' },
-  { key: 'airQuality', label: 'Air Quality', icon: airQualityIcon, color: '#a3b899' },
-  { key: 'flood', label: 'Flood', icon: floodIcon, color: '#bac7d5' },
+type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
+// Hazard identity colours live in index.css (--atlas-hazard-*)
+const RISKS: { key: RiskKey; label: string; icon: IconComponent; color: string }[] = [
+  { key: 'earthquake', label: 'Earthquake', icon: EarthquakeIcon, color: 'var(--atlas-hazard-earthquake)' },
+  { key: 'wildfire', label: 'Wildfire', icon: WildfireIcon, color: 'var(--atlas-hazard-wildfire)' },
+  { key: 'airQuality', label: 'Air Quality', icon: AirQualityIcon, color: 'var(--atlas-hazard-air)' },
+  { key: 'flood', label: 'Flood', icon: FloodIcon, color: 'var(--atlas-hazard-flood)' },
 ];
 
-const FACILITIES = [
-  { label: 'Hospitals', icon: hospitalIcon },
-  { label: 'Shelters', icon: shelterIcon },
-  { label: 'Fire Stations', icon: fireStationIcon },
+const FACILITIES: { label: string; icon: IconComponent }[] = [
+  { label: 'Hospitals', icon: HospitalIcon },
+  { label: 'Shelters', icon: ShelterIcon },
+  { label: 'Fire Stations', icon: FireStationIcon },
 ];
 
 const PENDING_SCORE = '--';
@@ -98,8 +102,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="atlas-sidebar">
       <header className="atlas-header">
-        <h1>
-          <img src={atlasTitle} alt="Risk & Resilience Atlas" className="atlas-title" />
+        {/* Live text instead of a raster image: crisp at any DPI and themeable */}
+        <h1 className="atlas-title">
+          <span className="atlas-title__line">Risk &amp;</span>{' '}
+          <span className="atlas-title__line">Resilience Atlas</span>
         </h1>
       </header>
 

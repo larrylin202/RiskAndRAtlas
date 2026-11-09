@@ -1,18 +1,77 @@
 /* frontend/src/styles/index.css */
 
+/* ---------- Design tokens ---------- */
+
 :root {
+  /* Colour: surfaces + text */
   --atlas-ink: #1a1a1a;
   /* Secondary text: ~6:1 on paper, ~7.5:1 on white (WCAG AA for small text) */
   --atlas-ink-muted: #555555;
   /* Placeholder text: ~5:1 on the search field */
   --atlas-ink-placeholder: #6b6b6b;
+  --atlas-on-ink: #ffffff;
+  --atlas-title-ink: #f5f0e2;
   --atlas-paper: #ebe8e8;
   --atlas-card: #ffffff;
   --atlas-field: #fffafa;
+  --atlas-chip-moderate: #dcd8d8;
   --atlas-error: #b3261e;
+  --atlas-border-subtle: rgb(26 26 26 / 15%);
+  --atlas-rule: rgb(26 26 26 / 30%);
+  --atlas-hover-tint: rgb(0 0 0 / 5%);
+
+  /* Colour: hazard identity (row accent strips) */
+  --atlas-hazard-earthquake: #f4c46a;
+  --atlas-hazard-wildfire: #e06646;
+  --atlas-hazard-air: #a3b899;
+  --atlas-hazard-flood: #bac7d5;
+
+  /* Typography */
+  --atlas-display: "Jost", "Futura", "Century Gothic", sans-serif;
   --atlas-serif: "Libre Baskerville", Georgia, serif;
   --atlas-mono: "Intel One Mono", ui-monospace, monospace;
+  --text-xs: 13px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-display: 50px;
+
+  /* Spacing: 4px base scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Shape */
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 2px 8px rgb(26 26 26 / 18%);
+  --shadow-md: 0 4px 10px rgb(26 26 26 / 10%);
+  --shadow-lg: 0 10px 25px rgb(26 26 26 / 16%);
+
+  /* Icons */
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+
+  /* Motion */
+  --duration-fast: 150ms;
+
+  /* Layering */
+  --z-search: 10;
+  --z-map-overlay: 1000; /* above Leaflet panes (<=700), level with its controls */
+
+  /* Layout */
   --atlas-sidebar-width: 400px;
+  --control-height: 48px;
 }
 
 *,
@@ -89,25 +148,28 @@ body {
   background: var(--atlas-ink);
 }
 
-.atlas-header h1 {
+.atlas-title {
   margin: 0;
+  padding: var(--space-4) var(--space-4) var(--space-6);
+  color: var(--atlas-title-ink);
+  font-family: var(--atlas-display);
+  font-size: var(--text-display);
+  font-weight: 400;
+  line-height: 1.18;
 }
 
-.atlas-title {
+.atlas-title__line {
   display: block;
-  width: 100%;
-  max-width: 376px;
-  height: auto;
 }
 
 .atlas-content {
-  padding: 11px 16px 28px;
+  padding: var(--space-3) var(--space-4) var(--space-8);
 }
 
 .atlas-sidebar h2 {
   margin: 0;
   font-family: var(--atlas-serif);
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 700;
   line-height: normal;
 }
@@ -134,32 +196,33 @@ body {
 
 .search-wrap {
   position: relative;
-  z-index: 10;
+  z-index: var(--z-search);
   display: flex;
   align-items: center;
   width: 100%;
-  height: 50px;
-  border-radius: 25px;
+  height: calc(var(--control-height) + 2px);
+  border-radius: var(--radius-pill);
   background: var(--atlas-field);
 }
 
 .search-pin {
-  width: 18px;
-  height: 18px;
-  margin-left: 15px;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  margin-left: var(--space-4);
   flex: 0 0 auto;
+  color: var(--atlas-ink);
 }
 
 .search-wrap input {
   min-width: 0;
   height: 100%;
   flex: 1;
-  padding: 0 12px 0 26px;
+  padding: 0 var(--space-3) 0 var(--space-6);
   border: 0;
   color: var(--atlas-ink);
   background: transparent;
   font-family: var(--atlas-serif);
-  font-size: 16px;
+  font-size: var(--text-md);
   font-weight: 700;
 }
 
@@ -183,16 +246,17 @@ body {
 
 .search-wrap > button {
   display: grid;
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+  width: var(--control-height);
+  height: var(--control-height);
+  flex: 0 0 var(--control-height);
   place-items: center;
   border-radius: 50%;
+  color: var(--atlas-ink);
   cursor: pointer;
 }
 
 .search-wrap > button:hover:not(:disabled) {
-  background: rgb(0 0 0 / 5%);
+  background: var(--atlas-hover-tint);
 }
 
 .search-wrap > button:disabled,
@@ -201,22 +265,22 @@ body {
   cursor: default;
 }
 
-.search-wrap > button img {
-  width: 24px;
-  height: 24px;
+.search-icon {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
 }
 
 .search-results {
   position: absolute;
-  top: 55px;
+  top: calc(100% + var(--space-1));
   right: 0;
   left: 0;
   max-height: min(320px, 50vh);
   overflow-y: auto;
-  border: 1px solid rgb(26 26 26 / 15%);
-  border-radius: 15px;
+  border: 1px solid var(--atlas-border-subtle);
+  border-radius: var(--radius-lg);
   background: var(--atlas-field);
-  box-shadow: 0 10px 25px rgb(26 26 26 / 16%);
+  box-shadow: var(--shadow-lg);
 }
 
 .search-results ul {
@@ -229,10 +293,10 @@ body {
 .atlas-sidebar .search-results p {
   display: block;
   width: 100%;
-  padding: 11px 16px;
+  padding: var(--space-3) var(--space-4);
   text-align: left;
   font-family: var(--atlas-serif);
-  font-size: 14px;
+  font-size: var(--text-sm);
   line-height: 1.45;
 }
 
@@ -258,34 +322,35 @@ body {
 /* ---------- Location status ---------- */
 
 .atlas-sidebar .current-location {
-  margin-top: 10px;
-  padding-left: 4px;
+  margin-top: var(--space-3);
+  padding-left: var(--space-1);
   color: var(--atlas-ink-muted);
-  font-size: 13px;
+  font-size: var(--text-xs);
   line-height: 1.5;
 }
 
 /* ---------- Risk + facility rows ---------- */
 
-.risk-section {
-  margin-top: 36px;
+.risk-section,
+.facility-section {
+  margin-top: var(--space-10);
 }
 
 .atlas-sidebar .score-caption {
-  margin-top: 2px;
+  margin-top: var(--space-1);
   color: var(--atlas-ink-muted);
-  font-size: 13px;
+  font-size: var(--text-xs);
 }
 
 .atlas-sidebar .sidebar-error {
-  margin-top: 6px;
-  font-size: 13px;
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
 }
 
 .row-list {
   display: grid;
-  gap: 10px;
-  margin-top: 9px;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
 }
 
 .interactive-row-wrap {
@@ -294,22 +359,24 @@ body {
 
 .atlas-sidebar .data-row {
   --accent: var(--atlas-ink);
+  --accent-strip: 17px;
   position: relative;
   display: grid;
   /* icon | label | score | severity chip | chevron (+ accent strip) */
   grid-template-columns: 58px minmax(0, 1fr) 52px 96px 40px;
   align-items: center;
   width: 100%;
-  min-height: 48px;
+  min-height: var(--control-height);
   overflow: hidden;
-  border-radius: 15px;
-  background: linear-gradient(to right, var(--atlas-card) 0 calc(100% - 17px), transparent 0),
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(to right, var(--atlas-card) 0 calc(100% - var(--accent-strip)), transparent 0),
     var(--accent);
   text-align: left;
   cursor: pointer;
   transition:
-    transform 150ms ease,
-    box-shadow 150ms ease;
+    transform var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
 }
 
 .atlas-sidebar .data-row--no-score {
@@ -318,7 +385,7 @@ body {
 
 .data-row:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgb(26 26 26 / 10%);
+  box-shadow: var(--shadow-md);
 }
 
 /* Open row: inset ink border so the expanded state is visible at a glance */
@@ -329,23 +396,23 @@ body {
 .data-row[aria-expanded="true"]:hover {
   box-shadow:
     inset 0 0 0 2px var(--atlas-ink),
-    0 4px 10px rgb(26 26 26 / 10%);
+    var(--shadow-md);
 }
 
 .data-row:active {
   transform: translateY(0);
 }
 
+/* Row icons keep their intrinsic sizes (20-26px) from the source artwork */
 .row-icon {
-  max-width: 25px;
-  max-height: 26px;
   justify-self: center;
+  color: var(--atlas-ink);
 }
 
 .row-label {
   overflow: hidden;
   color: var(--atlas-ink);
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 700;
   line-height: normal;
   text-overflow: ellipsis;
@@ -355,7 +422,7 @@ body {
 .risk-score {
   justify-self: start;
   font-family: var(--atlas-mono);
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 700;
   line-height: normal;
 }
@@ -369,10 +436,10 @@ body {
    competes with the hazard-identity accent strip. The word carries the meaning. */
 .risk-chip {
   display: inline-block;
-  padding: 2px 8px;
+  padding: calc(var(--space-1) / 2) var(--space-2);
   border: 1px solid var(--atlas-ink-muted);
-  border-radius: 999px;
-  font-size: 13px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
   font-weight: 700;
   line-height: 1.4;
   white-space: nowrap;
@@ -386,18 +453,20 @@ body {
 .risk-chip--moderate {
   border-color: transparent;
   color: var(--atlas-ink);
-  background: #dcd8d8;
+  background: var(--atlas-chip-moderate);
 }
 
 .risk-chip--elevated {
   border-color: var(--atlas-ink);
-  color: #ffffff;
+  color: var(--atlas-on-ink);
   background: var(--atlas-ink);
 }
 
 .row-chevron {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
   color: var(--atlas-ink-muted);
-  transition: transform 150ms ease;
+  transition: transform var(--duration-fast) ease;
 }
 
 .data-row[aria-expanded="true"] .row-chevron {
@@ -406,23 +475,15 @@ body {
 }
 
 .row-detail {
-  margin: 5px 14px 2px;
-  padding-left: 10px;
-  border-left: 2px solid rgb(26 26 26 / 30%);
-  font-size: 14px;
+  margin: var(--space-2) var(--space-4) var(--space-1);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--atlas-rule);
+  font-size: var(--text-sm);
   line-height: 1.5;
 }
 
 .atlas-sidebar .row-detail p + p {
-  margin-top: 4px;
-}
-
-.facility-section {
-  margin-top: 40px;
-}
-
-.facility-section .row-list {
-  margin-top: 10px;
+  margin-top: var(--space-1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -441,42 +502,41 @@ body {
   height: 100%;
 }
 
-/* Sits above Leaflet panes (<=700); same layer as Leaflet's own controls */
 .map-status-stack {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 1000;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: var(--z-map-overlay);
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
   max-width: min(360px, calc(100% - 80px));
 }
 
 .map-status {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   margin: 0;
-  padding: 8px 12px;
-  border-radius: 12px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
   color: var(--atlas-ink);
   background: var(--atlas-field);
-  box-shadow: 0 2px 8px rgb(26 26 26 / 18%);
+  box-shadow: var(--shadow-sm);
   font-family: var(--atlas-serif);
-  font-size: 13px;
+  font-size: var(--text-xs);
   line-height: 1.4;
 }
 
 .map-status--error {
-  border-left: 4px solid var(--atlas-error);
+  border-left: var(--space-1) solid var(--atlas-error);
 }
 
 .map-status__retry {
   flex: 0 0 auto;
   margin-left: auto;
-  padding: 4px 12px;
+  padding: var(--space-1) var(--space-3);
   border: 1px solid var(--atlas-ink);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--atlas-ink);
   background: transparent;
   font: inherit;
@@ -485,7 +545,7 @@ body {
 }
 
 .map-status__retry:hover {
-  background: rgb(0 0 0 / 5%);
+  background: var(--atlas-hover-tint);
 }
 
 .map-status__retry:focus-visible {
@@ -497,7 +557,7 @@ body {
   flex: 0 0 auto;
   width: 14px;
   height: 14px;
-  border: 2px solid rgb(26 26 26 / 20%);
+  border: 2px solid var(--atlas-border-subtle);
   border-top-color: var(--atlas-ink);
   border-radius: 50%;
   animation: map-spin 800ms linear infinite;
@@ -518,11 +578,11 @@ body {
 /* ---------- Hazard popups ---------- */
 
 .hazard-popup {
-  font-size: 13px;
+  font-size: var(--text-xs);
 }
 
 .hazard-popup h4 {
-  margin: 0 0 4px 0;
+  margin: 0 0 var(--space-1) 0;
 }
 
 .hazard-popup p {

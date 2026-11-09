@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { searchMap } from '../../services/api';
 import type { Places } from '../../types/places';
-import mapPinIcon from '../../assets/sidebar/map-pin.svg';
-import searchIcon from '../../assets/sidebar/search.svg';
+import { MapPinIcon, SearchIcon } from './icons';
 
 type SearchState =
   | { status: 'idle' }
@@ -103,7 +102,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({ onSelectPlace, ini
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
     >
-      <img src={mapPinIcon} alt="" className="search-pin" />
+      <MapPinIcon className="search-pin" />
       <label className="visually-hidden" htmlFor="location-search">
         Search Location
       </label>
@@ -123,7 +122,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({ onSelectPlace, ini
         aria-disabled={busy}
         onMouseDown={(event) => event.preventDefault()}
       >
-        <img src={searchIcon} alt="" />
+        <SearchIcon className="search-icon" />
       </button>
 
       <p className="visually-hidden" role="status" aria-live="polite">

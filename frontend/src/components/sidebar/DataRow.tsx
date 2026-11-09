@@ -1,8 +1,9 @@
 import React from 'react';
 import type { RiskLevelInfo } from '../../utils/riskLevel';
+import { ChevronDownIcon } from './icons';
 
 interface DataRowProps {
-  icon: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   label: string;
   // Color of the strip on the right edge of the row (identifies the hazard type)
   accent?: string;
@@ -15,31 +16,11 @@ interface DataRowProps {
   children: React.ReactNode;
 }
 
-const Chevron: React.FC = () => (
-  <svg
-    className="row-chevron"
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    fill="none"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <path
-      d="M4 6l4 4 4-4"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 // One expandable row in the sidebar: icon, label, optional score + severity
 // chip, and a chevron showing whether it is open. Clicking it reveals
 // `children` underneath.
 export const DataRow: React.FC<DataRowProps> = ({
-  icon,
+  icon: Icon,
   label,
   accent,
   score,
@@ -61,7 +42,7 @@ export const DataRow: React.FC<DataRowProps> = ({
         aria-controls={detailId}
         onClick={onToggle}
       >
-        <img src={icon} alt="" className="row-icon" />
+        <Icon className="row-icon" />
         <span className="row-label">{label}</span>
         {hasScore && (
           <>
@@ -73,7 +54,7 @@ export const DataRow: React.FC<DataRowProps> = ({
             </span>
           </>
         )}
-        <Chevron />
+        <ChevronDownIcon className="row-chevron" />
       </button>
       {/* Always rendered so aria-controls points at a real element */}
       <div className="row-detail" id={detailId} hidden={!isOpen}>
