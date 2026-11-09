@@ -432,6 +432,89 @@ body {
   }
 }
 
+/* ---------- Map overlays ---------- */
+
+.hazard-map,
+.hazard-map__container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Sits above Leaflet panes (<=700); same layer as Leaflet's own controls */
+.map-status-stack {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  display: grid;
+  gap: 8px;
+  max-width: min(360px, calc(100% - 80px));
+}
+
+.map-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  color: var(--atlas-ink);
+  background: var(--atlas-field);
+  box-shadow: 0 2px 8px rgb(26 26 26 / 18%);
+  font-family: var(--atlas-serif);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.map-status--error {
+  border-left: 4px solid var(--atlas-error);
+}
+
+.map-status__retry {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 4px 12px;
+  border: 1px solid var(--atlas-ink);
+  border-radius: 999px;
+  color: var(--atlas-ink);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.map-status__retry:hover {
+  background: rgb(0 0 0 / 5%);
+}
+
+.map-status__retry:focus-visible {
+  outline: 2px solid var(--atlas-ink);
+  outline-offset: 2px;
+}
+
+.map-spinner {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(26 26 26 / 20%);
+  border-top-color: var(--atlas-ink);
+  border-radius: 50%;
+  animation: map-spin 800ms linear infinite;
+}
+
+@keyframes map-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-spinner {
+    animation: none;
+  }
+}
+
 /* ---------- Hazard popups ---------- */
 
 .hazard-popup {

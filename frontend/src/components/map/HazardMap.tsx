@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, GeoJSON, Marker, CircleMarker, Popup, useMapEvents, ZoomControl } from 'react-leaflet';
 import type { Layer } from 'leaflet';
@@ -28,6 +27,29 @@ const DefaultIcon = L.icon({
 });
 
 L.Marker.prototype.options.icon = DefaultIcon;
+
+const HAZARD_LAYERS = {
+  earthquakes: { url: '/api/hazards/earthquakes', name: 'earthquake' },
+  wildfires: { url: '/api/hazards/wildfires', name: 'wildfire' },
+  floods: { url: '/api/hazards/floods', name: 'flood' },
+} as const;
+
+type HazardLayerKey = keyof typeof HAZARD_LAYERS;
+
+const ALL_LAYER_KEYS = Object.keys(HAZARD_LAYERS) as HazardLayerKey[];
+
+const fetchHazardLayer = async (url: string, signal: AbortSignal) => {
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  return (await res.json()) as HazardFeatureCollection;
+};
+
+// ['wildfires', 'floods'] -> "wildfire and flood"
+const listLayerNames = (keys: HazardLayerKey[]) => {
+  const names = keys.map((key) => HAZARD_LAYERS[key].name);
+  if (names.length <= 1) return names.join('');
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+};
 
 // Lets the user pick a location by double-clicking the map
 const MapDoubleClickHandler: React.FC<{ onPick: (coords: LatLngTuple) => void }> = ({ onPick }) => {
@@ -60,68 +82,45 @@ export const HazardMap: React.FC<HazardMapProps> = ({
 
   const handleMapPick = useCallback((coords: LatLngTuple) => onMapPick?.(coords), [onMapPick]);
 
-  const [earthquakeData, setEarthquakeData] = useState<HazardFeatureCollection | null>(null);
-  const [wildfireData, setWildfireData] = useState<HazardFeatureCollection | null>(null);
-  const [floodData, setFloodData] = useState<HazardFeatureCollection | null>(null);
-
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // Each layer loads independently; one failing must not hide the others
+  const [layers, setLayers] = useState<Partial<Record<HazardLayerKey, HazardFeatureCollection>>>({});
+  // Layers still to fetch: all of them at first, only the failed ones on retry
+  const [pendingLayers, setPendingLayers] = useState<HazardLayerKey[]>(ALL_LAYER_KEYS);
+  const [failedLayers, setFailedLayers] = useState<HazardLayerKey[]>([]);
+  const isLoading = pendingLayers.length > 0;
 
   useEffect(() => {
-    // Fetch earthquake data
-    fetch('/api/hazards/earthquakes')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error: ${res.status}`);
+    if (pendingLayers.length === 0) return;
+    const controller = new AbortController();
+
+    Promise.allSettled(
+      pendingLayers.map((key) => fetchHazardLayer(HAZARD_LAYERS[key].url, controller.signal))
+    ).then((results) => {
+      if (controller.signal.aborted) return;
+
+      const loaded: Partial<Record<HazardLayerKey, HazardFeatureCollection>> = {};
+      const failed: HazardLayerKey[] = [];
+      results.forEach((result, i) => {
+        const key = pendingLayers[i];
+        if (result.status === 'fulfilled') loaded[key] = result.value;
+        else {
+          console.error(`Failed to load ${key} hazard layer:`, result.reason);
+          failed.push(key);
         }
-        return res.json() as Promise<HazardFeatureCollection>;
-      })
-      .then((data) => {
-        setEarthquakeData(data);
-        setIsLoading(false);
-      })
-      .catch((err: Error) => {
-        console.error('Failed to load hazard GeoJSON:', err);
-        setError(err.message);
-        setIsLoading(false);
       });
-    
-    // Fetch wildfire data
-    fetch('/api/hazards/wildfires')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error: ${res.status}`);
-        }
-        return res.json() as Promise<HazardFeatureCollection>;
-      })
-      .then((data) => {
-        setWildfireData(data);
-        setIsLoading(false);
-      })
-      .catch((err: Error) => {
-        console.error('Failed to load hazard GeoJSON:', err);
-        setError(err.message);
-        setIsLoading(false);
-      });
-    
-    // Fetch 
-    fetch('/api/hazards/floods')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error: ${res.status}`);
-        }
-        return res.json() as Promise<HazardFeatureCollection>;
-      })
-      .then((data) => {
-        setFloodData(data);
-        setIsLoading(false);
-      })
-      .catch((err: Error) => {
-        console.error('Failed to load hazard GeoJSON:', err);
-        setError(err.message);
-        setIsLoading(false);
-      });
-  }, []);
+
+      setLayers((current) => ({ ...current, ...loaded }));
+      setFailedLayers(failed);
+      setPendingLayers([]);
+    });
+
+    return () => controller.abort();
+  }, [pendingLayers]);
+
+  const retryFailedLayers = () => {
+    setPendingLayers(failedLayers);
+    setFailedLayers([]);
+  };
 
   const onEachHazardFeature = (
     feature: Feature<Geometry, HazardProperties>,
@@ -190,45 +189,32 @@ export const HazardMap: React.FC<HazardMapProps> = ({
   };
 
   return (
-    <div style={{ height: '100%', width: '100%', position: 'relative' }}>
-      {isLoading && (
-        <div style={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          zIndex: 1000,
-          background: 'rgba(255, 255, 255, 0.9)',
-          padding: '6px 12px',
-          borderRadius: 4,
-          boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-          fontSize: 12
-        }}>
-          Loading hazard layers...
-        </div>
-      )}
+    <div className="hazard-map">
+      {/* Top-left keeps clear of the zoom control (top-right) and attribution (bottom-right) */}
+      <div className="map-status-stack">
+        {isLoading && (
+          <p className="map-status" role="status">
+            <span className="map-spinner" aria-hidden="true" />
+            Loading hazard layers…
+          </p>
+        )}
 
-      {error && (
-        <div style={{
-          position: 'absolute',
-          bottom: 16,
-          left: 16,
-          zIndex: 1000,
-          background: '#fee2e2',
-          color: '#991b1b',
-          padding: '8px 12px',
-          borderRadius: 4,
-          fontSize: 12
-        }}>
-          Layer error: {error}
-        </div>
-      )}
+        {failedLayers.length > 0 && !isLoading && (
+          <div className="map-status map-status--error" role="alert">
+            <span>Couldn't load {listLayerNames(failedLayers)} data.</span>
+            <button type="button" className="map-status__retry" onClick={retryFailedLayers}>
+              Retry
+            </button>
+          </div>
+        )}
+      </div>
 
       <MapContainer
+        className="hazard-map__container"
         center={defaultCenter}
         zoom={6}
         zoomControl={false}
         doubleClickZoom={false}
-        style={{ height: '100%', width: '100%' }}
       >
         <ZoomControl 
           position='topright'
@@ -277,25 +263,25 @@ export const HazardMap: React.FC<HazardMapProps> = ({
           </Marker>
         )}
 
-        {earthquakeData && (
+        {layers.earthquakes && (
           <GeoJSON
-            data={earthquakeData}
+            data={layers.earthquakes}
             onEachFeature={onEachHazardFeature}
             pointToLayer={createCircleMarker}
           />
         )}
 
-        {wildfireData && (
+        {layers.wildfires && (
           <GeoJSON
-            data={wildfireData}
+            data={layers.wildfires}
             onEachFeature={onEachHazardFeature}
             style={setWildfireStyle}
           />
         )}
 
-        {floodData && (
+        {layers.floods && (
           <GeoJSON
-            data={floodData}
+            data={layers.floods}
             onEachFeature={onEachHazardFeature}
           />
         )}
