@@ -329,6 +329,43 @@ body {
   line-height: 1.5;
 }
 
+/* ---------- Combined risk score ---------- */
+
+.combined-section {
+  margin-top: var(--space-6);
+}
+
+.combined-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--atlas-card);
+}
+
+.atlas-sidebar .combined-score {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.combined-score__value {
+  color: var(--atlas-ink);
+  font-family: var(--atlas-mono);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.combined-score__max {
+  color: var(--atlas-ink-muted);
+  font-family: var(--atlas-mono);
+  font-size: var(--text-sm);
+}
+
 /* ---------- Risk + facility rows ---------- */
 
 .risk-section,

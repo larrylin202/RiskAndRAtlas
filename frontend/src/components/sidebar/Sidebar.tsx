@@ -61,6 +61,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [openRow, setOpenRow] = useState<string | null>(null);
   const risk = useRiskScore(location);
   const riskData = risk.status === 'done' ? risk.data : null;
+  const combinedScore =
+    riskData && Number.isFinite(riskData.combined_risk) ? riskData.combined_risk : null;
 
   const toggleRow = (label: string) =>
     setOpenRow((current) => (current === label ? null : label));
@@ -162,6 +164,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <p className="current-location" aria-live="polite">
           {statusText}
         </p>
+
+        {location && (
+          <section aria-labelledby="combined-heading" className="combined-section">
+            <h2 id="combined-heading">Combined Risk Score</h2>
+            <div className="combined-card" aria-live="polite">
+              <p className="combined-score">
+                <strong className="combined-score__value">
+                  {risk.status === 'loading' ? '...' : formatScore(combinedScore)}
+                </strong>
+                <span className="combined-score__max">/ 100</span>
+              </p>
+              {combinedScore !== null && (
+                <span className={`risk-chip risk-chip--${getRiskLevel(combinedScore).level}`}>
+                  {getRiskLevel(combinedScore).label}
+                </span>
+              )}
+            </div>
+            <p className="score-caption">Average of the earthquake, wildfire and flood scores</p>
+          </section>
+        )}
 
         <section aria-labelledby="risk-heading" className="risk-section">
           <h2 id="risk-heading">Risk Levels in your Area</h2>
