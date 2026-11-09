@@ -13,9 +13,9 @@ import type { HazardFeatureCollection, HazardProperties, LatLngTuple } from '../
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import MapSearch from '../MapSearch';
 import FlyToPlace from '../FlyToPlace';
-import type { Places } from '../../types/places'
+import type { Places } from '../../types/places';
+import { formatCoords } from '../../utils/format';
 
 const DefaultIcon = L.icon({
   iconUrl: markerIcon,
@@ -37,41 +37,28 @@ const MapDoubleClickHandler: React.FC<{ onPick: (coords: LatLngTuple) => void }>
   return null;
 };
 
-const formatCoords = ([lat, lon]: LatLngTuple) => `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-
 interface HazardMapProps {
-  onUserLocationChange?: (coords: LatLngTuple) => void;
+  deviceLocation: LatLngTuple | null;
+  selectedPlace: Places | null;
+  pickedLocation: LatLngTuple | null;
+  onDeviceLocationFound?: (coords: LatLngTuple) => void;
   onLocationError?: (message: string) => void;
+  onMapPick?: (coords: LatLngTuple) => void;
 }
 
-export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLocationError }) => {
+export const HazardMap: React.FC<HazardMapProps> = ({
+  deviceLocation,
+  selectedPlace,
+  pickedLocation,
+  onDeviceLocationFound,
+  onLocationError,
+  onMapPick,
+}) => {
   // Default fallback center (California)
   const defaultCenter: LatLngTuple = [36.7783, -119.4179];
-  const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
-  const [selectedPlace, setSelectedPlace] = useState<Places | null>(null);
-  const [pickedLocation, setPickedLocation] = useState<LatLngTuple | null>(null);
   const hasChosenLocation = selectedPlace !== null || pickedLocation !== null;
-  const [pickCount, setPickCount] = useState(0);
 
-  const handleSelectPlace = useCallback((place: Places) => {
-    setSelectedPlace(place);
-    setPickedLocation(null);
-    onUserLocationChange?.([place.lat, place.lon]);
-  }, [onUserLocationChange]);
-
-  const handleMapPick = useCallback((coords: LatLngTuple) => {
-    setPickedLocation(coords);
-    setSelectedPlace(null);
-    setPickCount((count) => count + 1);
-    onUserLocationChange?.(coords);
-  }, [onUserLocationChange]);
-
-  // Prevents the function from being recreated on every render
-  const handleLocationFound = useCallback((coords: LatLngTuple) => {
-    setUserLocation(coords);
-    onUserLocationChange?.(coords);
-  }, [onUserLocationChange]);
-
+  const handleMapPick = useCallback((coords: LatLngTuple) => onMapPick?.(coords), [onMapPick]);
 
   const [earthquakeData, setEarthquakeData] = useState<HazardFeatureCollection | null>(null);
   const [wildfireData, setWildfireData] = useState<HazardFeatureCollection | null>(null);
@@ -236,12 +223,6 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
         </div>
       )}
 
-      <MapSearch 
-        key={pickCount}
-        initialText={pickedLocation ? formatCoords(pickedLocation) : ''}
-        onSelectPlace={handleSelectPlace}
-      />
-
       <MapContainer
         center={defaultCenter}
         zoom={6}
@@ -259,7 +240,7 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
         />
 
         <LocationController
-          onLocationFound={handleLocationFound}
+          onLocationFound={onDeviceLocationFound}
           onLocationError={onLocationError}
           enabled={!hasChosenLocation}
         />
@@ -268,9 +249,9 @@ export const HazardMap: React.FC<HazardMapProps> = ({ onUserLocationChange, onLo
         
         <FlyToPlace place={selectedPlace} />
 
-        {userLocation && (
+        {deviceLocation && (
           <CircleMarker
-            center={userLocation}
+            center={deviceLocation}
             radius={8}
             pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#2563eb', fillOpacity: 1 }}
           >
