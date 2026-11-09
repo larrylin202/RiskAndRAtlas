@@ -2,6 +2,10 @@
 
 :root {
   --atlas-ink: #1a1a1a;
+  /* Secondary text: ~6:1 on paper, ~7.5:1 on white (WCAG AA for small text) */
+  --atlas-ink-muted: #555555;
+  /* Placeholder text: ~5:1 on the search field */
+  --atlas-ink-placeholder: #6b6b6b;
   --atlas-paper: #ebe8e8;
   --atlas-card: #ffffff;
   --atlas-field: #fffafa;
@@ -85,6 +89,10 @@ body {
   background: var(--atlas-ink);
 }
 
+.atlas-header h1 {
+  margin: 0;
+}
+
 .atlas-title {
   display: block;
   width: 100%;
@@ -151,7 +159,7 @@ body {
   color: var(--atlas-ink);
   background: transparent;
   font-family: var(--atlas-serif);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -169,7 +177,7 @@ body {
 }
 
 .search-wrap input::placeholder {
-  color: rgb(0 0 0 / 50%);
+  color: var(--atlas-ink-placeholder);
   opacity: 1;
 }
 
@@ -224,8 +232,8 @@ body {
   padding: 11px 16px;
   text-align: left;
   font-family: var(--atlas-serif);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .search-results button {
@@ -235,6 +243,11 @@ body {
 .search-results button:hover,
 .search-results button:focus-visible {
   background: var(--atlas-paper);
+}
+
+.search-results button:focus-visible {
+  outline: 2px solid var(--atlas-ink);
+  outline-offset: -2px;
 }
 
 .atlas-sidebar .search-results .search-error,
@@ -247,9 +260,9 @@ body {
 .atlas-sidebar .current-location {
   margin-top: 10px;
   padding-left: 4px;
-  opacity: 0.6;
-  font-size: 11px;
-  line-height: 1.4;
+  color: var(--atlas-ink-muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 /* ---------- Risk + facility rows ---------- */
@@ -260,13 +273,13 @@ body {
 
 .atlas-sidebar .score-caption {
   margin-top: 2px;
-  opacity: 0.6;
-  font-size: 12px;
+  color: var(--atlas-ink-muted);
+  font-size: 13px;
 }
 
 .atlas-sidebar .sidebar-error {
   margin-top: 6px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .row-list {
@@ -286,7 +299,7 @@ body {
   grid-template-columns: 58px minmax(0, 1fr) 68px 40px;
   align-items: center;
   width: 100%;
-  min-height: 43px;
+  min-height: 48px;
   overflow: hidden;
   border-radius: 15px;
   background: linear-gradient(to right, var(--atlas-card) 0 calc(100% - 17px), transparent 0),
@@ -319,8 +332,8 @@ body {
 
 .row-label {
   overflow: hidden;
-  opacity: 0.5;
-  font-size: 12px;
+  color: var(--atlas-ink);
+  font-size: 14px;
   font-weight: 700;
   line-height: normal;
   text-overflow: ellipsis;
@@ -330,7 +343,7 @@ body {
 .risk-score {
   justify-self: start;
   font-family: var(--atlas-mono);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   line-height: normal;
 }
@@ -344,12 +357,12 @@ body {
   margin: 5px 14px 2px;
   padding-left: 10px;
   border-left: 2px solid rgb(26 26 26 / 30%);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .atlas-sidebar .row-detail p + p {
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 .facility-section {

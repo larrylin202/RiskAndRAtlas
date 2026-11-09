@@ -81,6 +81,19 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({ onSelectPlace, ini
 
   const showDropdown = isOpen && search.status !== 'idle';
 
+  // Screen-reader summary of the search state; the live region itself is always
+  // mounted so updates are announced reliably
+  let announcement = '';
+  if (search.status === 'loading') announcement = 'Searching…';
+  else if (search.status === 'error') announcement = search.message;
+  else if (search.status === 'done') {
+    const count = search.places.length;
+    announcement =
+      count === 0
+        ? `No places found for "${search.query}".`
+        : `${count} ${count === 1 ? 'place' : 'places'} found.`;
+  }
+
   return (
     <form
       className="search-wrap"
@@ -112,6 +125,10 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({ onSelectPlace, ini
       >
         <img src={searchIcon} alt="" />
       </button>
+
+      <p className="visually-hidden" role="status" aria-live="polite">
+        {announcement}
+      </p>
 
       {showDropdown && (
         <div className="search-results">

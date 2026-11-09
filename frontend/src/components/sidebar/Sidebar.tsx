@@ -104,7 +104,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="atlas-sidebar">
       <header className="atlas-header">
-        <img src={atlasTitle} alt="Risk & Resilience Atlas" className="atlas-title" />
+        <h1>
+          <img src={atlasTitle} alt="Risk & Resilience Atlas" className="atlas-title" />
+        </h1>
       </header>
 
       <div className="atlas-content">

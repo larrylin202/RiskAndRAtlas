@@ -42,11 +42,10 @@ export const DataRow: React.FC<DataRowProps> = ({
         {hasScore && <strong className="risk-score">{score}</strong>}
         <img src={infoIcon} alt="" className="info-icon" />
       </button>
-      {isOpen && (
-        <div className="row-detail" id={detailId}>
-          {children}
-        </div>
-      )}
+      {/* Always rendered so aria-controls points at a real element */}
+      <div className="row-detail" id={detailId} hidden={!isOpen}>
+        {children}
+      </div>
     </div>
   );
 };
