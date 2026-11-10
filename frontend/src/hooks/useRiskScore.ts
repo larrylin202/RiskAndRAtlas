@@ -7,6 +7,16 @@ export interface RiskScoreResponse {
   earthquake_count: number;
   latitude: number;
   longitude: number;
+
+  air_quality_available: boolean;
+  air_quality_risk: number | null;
+  air_quality_aqi: number | null;
+  air_quality_category: string | null;
+  air_quality_pollutant: string | null;
+  air_quality_observed_at: string | null;
+  air_quality_site: string | null;
+  air_quality_reporting_area: string | null;
+
   strongest_earthquake: {
     age_days: number;
     distance_km: number;

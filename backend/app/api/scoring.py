@@ -1,8 +1,10 @@
+import requests
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, request, jsonify
 from sqlalchemy import func, select
 
+from ..config import Config
 from ..extensions import db
 from ..models import HazardFeature
 from ..scoring.calculator import (
@@ -20,6 +22,78 @@ EARTHQUAKE_MAX_AGE_DAYS = 30
 
 WILDFIRE_RADIUS_KM = 50.0
 FLOOD_RADIUS_KM = 50.0
+
+
+def get_air_quality(latitude, longitude):
+    """Fetch current AirNow observations and calculate an AQI risk score."""
+
+    api_key = Config.AIRNOW_API_KEY
+
+    if not api_key:
+        return None
+
+    url = "https://www.airnowapi.org/aq/observation/current/ziplatlong/"
+
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "format": "application/json",
+        "API_KEY": api_key,
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+
+        observations = response.json()
+
+        if not isinstance(observations, list):
+            return None
+
+        valid_observations = []
+
+        for observation in observations:
+            try:
+                aqi = float(observation["nowcastAQI"])
+            except (KeyError, TypeError, ValueError):
+                continue
+
+            if not 0 <= aqi <= 500:
+                continue
+
+            valid_observations.append({
+                "aqi": aqi,
+                "pollutant": observation.get("parameterName"),
+                "category": observation.get("aqiCategoryName"),
+                "date_observed": observation.get("dateObserved"),
+                "hour_observed": observation.get("hourObserved"),
+                "timezone": observation.get("localTimeZone"),
+                "site_name": observation.get("siteName"),
+                "reporting_area": observation.get("reportingAreaName"),
+            })
+
+        if not valid_observations:
+            return None
+
+        # Use the highest AQI across the available pollutants.
+        worst_observation = max(
+            valid_observations,
+            key=lambda item: item["aqi"]
+        )
+
+        aqi = worst_observation["aqi"]
+
+        # Convert the official 0-500 AQI scale to a preliminary 0-100 score.
+        risk_score = round((aqi / 500.0) * 100, 2)
+
+        return {
+            **worst_observation,
+            "risk_score": risk_score,
+        }
+
+    except (requests.RequestException, ValueError):
+        # AirNow failures should not prevent other risk scores from loading.
+        return None
 
 
 @scoring_bp.route("/score", methods=["GET"])
@@ -125,14 +199,11 @@ def get_risk_score():
 
         distance_km = distance_m / 1000
 
-        # Use the mapped size field first.
         size_acres = properties.get("size")
 
-        # Fall back to the original NIFC acreage field.
         if size_acres is None:
             size_acres = properties.get("attr_CalculatedAcres")
 
-        # Missing or invalid acreage is handled as unknown.
         try:
             if size_acres is not None:
                 size_acres = float(size_acres)
@@ -183,7 +254,6 @@ def get_risk_score():
 
     for properties, distance_m in nearby_floods:
 
-        # Only use active reference points reporting flooding.
         if properties.get("active") is not True:
             continue
 
@@ -192,7 +262,6 @@ def get_risk_score():
 
         distance_km = distance_m / 1000
 
-        # Prefer NWIS ID to identify a shared gauge.
         gauge_id = (
             properties.get("nwis_id")
             or properties.get("nws_id")
@@ -203,7 +272,6 @@ def get_risk_score():
         if gauge_id is None:
             continue
 
-        # Keep the nearest reference point for this gauge.
         if (
             gauge_id not in unique_flood_gauges
             or distance_km < unique_flood_gauges[gauge_id]["distance_km"]
@@ -256,11 +324,9 @@ def get_risk_score():
 
     for properties, contains_location in nearby_alerts:
 
-        # Only alerts whose geometry contains the selected location.
         if not contains_location:
             continue
 
-        # Exclude expired alerts.
         expires = properties.get("expires")
 
         if expires:
@@ -304,12 +370,22 @@ def get_risk_score():
         strongest_flood_alert = None
         nws_flood_risk = 0.0
 
+    # Air quality score
+
+    air_quality = get_air_quality(latitude, longitude)
+
+    if air_quality:
+        air_quality_risk = air_quality["risk_score"]
+    else:
+        air_quality_risk = None
+
     # combined risk score
 
     combined_risk = combined_risk_score(
         earthquake=earthquake_risk,
         wildfire=wildfire_risk,
         flood=max(flood_risk, nws_flood_risk),
+        air_quality=air_quality_risk,
     )
 
     return jsonify({
@@ -331,6 +407,21 @@ def get_risk_score():
         "nws_alert_count": len(active_alert_results),
         "nws_flood_risk": nws_flood_risk,
         "strongest_flood_alert": strongest_flood_alert,
+
+        "air_quality_available": air_quality is not None,
+        "air_quality_risk": air_quality_risk,
+        "air_quality_aqi": air_quality["aqi"] if air_quality else None,
+        "air_quality_category": air_quality["category"] if air_quality else None,
+        "air_quality_pollutant": air_quality["pollutant"] if air_quality else None,
+        "air_quality_observed_at": (
+            f'{air_quality["date_observed"]} '
+            f'{air_quality["hour_observed"]} '
+            f'{air_quality["timezone"]}'
+        ) if air_quality else None,
+        "air_quality_site": air_quality["site_name"] if air_quality else None,
+        "air_quality_reporting_area": (
+            air_quality["reporting_area"] if air_quality else None
+        ),
 
         "combined_risk": combined_risk,
     })

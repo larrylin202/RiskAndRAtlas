@@ -57,12 +57,59 @@ def get_floods():
 def get_flood_alerts():
     return _feature_collection("flood_alert")
 
+
 @hazards_bp.route("/air_quality", methods=["GET"])
 def get_air_quality():
-    zipcode = request.args.get('zip')
+    zipcode = request.args.get("zip")
     latitude = request.args.get("lat", type=float)
     longitude = request.args.get("lon", type=float)
     api_key = Config.AIRNOW_API_KEY
+
+    if not api_key:
+        return jsonify({"error": "AirNow API key is not configured"}), 500
+
+    if latitude is not None and longitude is not None:
+        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+            return jsonify({"error": "Invalid latitude or longitude"}), 400
+
+        params = {
+            "latitude": latitude,
+            "longitude": longitude,
+            "format": "application/json",
+            "API_KEY": api_key,
+        }
+
+    elif zipcode:
+        params = {
+            "zipCode": zipcode,
+            "format": "application/json",
+            "API_KEY": api_key,
+        }
+
+    else:
+        return jsonify({
+            "error": "Either zip is required or both lat and lon are required"
+        }), 400
+
+    url = "https://www.airnowapi.org/aq/observation/current/ziplatlong/"
+
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+
+        return jsonify(response.json())
+
+    except requests.RequestException as e:
+        return jsonify({
+            "error": "Failed to fetch AirNow data",
+            "details": str(e),
+        }), 500
+
+    except ValueError:
+        return jsonify({
+            "error": "AirNow returned an invalid JSON response"
+        }), 502
+
 
     
     if longitude is not None and latitude is not None:

@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (key === 'earthquake') return riskData.earthquake_risk;
     if (key === 'wildfire') return riskData.wildfire_risk;
     if (key === 'flood') return riskData.flood_risk;
-    // Air quality is not scored by the backend yet
+    if (key === 'airQuality') return riskData.air_quality_risk;
     return null;
   };
 
@@ -91,6 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </>
       );
     }
+
     if (key === 'wildfire') {
       const fire = data.strongest_wildfire;
       return (
@@ -106,6 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </>
       );
     }
+
     if (key === 'flood') {
       const gauge = data.nearest_flood_gauge;
       return (
@@ -120,6 +122,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </>
       );
     }
+
+    if (key === 'airQuality') {
+      return (
+        <>
+          <p>Air Quality Index: {data.air_quality_aqi ?? 'Unavailable'}</p>
+          <p>Category: {data.air_quality_category ?? 'Unavailable'}</p>
+          <p>Primary pollutant: {data.air_quality_pollutant ?? 'Unavailable'}</p>
+          <p>
+            Reporting station: {data.air_quality_site ?? 'Unavailable'}
+            {data.air_quality_reporting_area &&
+              ` (${data.air_quality_reporting_area})`}
+          </p>
+          <p>Last observed: {data.air_quality_observed_at ?? 'Unavailable'}</p>
+        </>
+      );
+    }
+
     return null;
   };
 
@@ -127,8 +146,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (!location) return 'Choose a location to see this score.';
     if (risk.status === 'loading') return 'Loading risk score...';
     if (risk.status === 'error') return risk.message;
-    if (key === 'airQuality') return 'Scoring integration pending.';
-    if (score === null || !riskData) return 'No score available for this location.';
+    if (score === null || !riskData) {
+      if (key === 'airQuality' && riskData && !riskData.air_quality_available) {
+        return 'Air quality data is currently unavailable for this location.';
+      }
+      return 'No score available for this location.';
+    }
 
     return (
       <>
@@ -181,7 +204,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </span>
               )}
             </div>
-            <p className="score-caption">Average of the earthquake, wildfire and flood scores</p>
+            <p className="score-caption">
+              Average of the available earthquake, wildfire, air quality and flood scores
+            </p>
           </section>
         )}
 
